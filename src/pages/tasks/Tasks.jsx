@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSettings } from '../../contexts/SettingsContext'
+import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2 } from 'lucide-react'
 
-const priorities = [
-  { value: 'alta', label: 'Alta', color: 'text-red-400 bg-red-950 border-red-900' },
-  { value: 'media', label: 'Média', color: 'text-yellow-400 bg-yellow-950 border-yellow-900' },
-  { value: 'baixa', label: 'Baixa', color: 'text-slate-400 bg-slate-800 border-slate-700' },
-]
+function getPriorities(t) {
+  return [
+    { value: 'alta',  label: t('tasks.priorities.alta'),  color: 'text-red-400 bg-red-950 border-red-900'      },
+    { value: 'media', label: t('tasks.priorities.media'), color: 'text-yellow-400 bg-yellow-950 border-yellow-900' },
+    { value: 'baixa', label: t('tasks.priorities.baixa'), color: 'text-slate-400 bg-slate-800 border-slate-700'  },
+  ]
+}
 
-function TaskItem({ task, onToggle, onDelete }) {
+function TaskItem({ task, onToggle, onDelete, priorities }) {
   const [deleting, setDeleting] = useState(false)
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
   return (
-    <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${task.done ? 'opacity-50 border-white/5 bg-white/[0.02]' : 'bg-[#141414] border-white/10 hover:border-white/20'}`}>
+    <div
+      className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+        task.done
+          ? 'opacity-50 border-white/5 bg-white/[0.02]'
+          : 'bg-[#141414] border-white/10 hover:border-white/20'
+      }`}
+    >
       <button onClick={() => onToggle(task)} className="flex-shrink-0 transition">
         {task.done
           ? <CheckCircle2 size={22} className="text-[#ff4d2e]" style={{ fill: 'rgba(255,77,46,0.2)' }} />
@@ -46,6 +56,10 @@ function TaskItem({ task, onToggle, onDelete }) {
 
 export default function Tasks() {
   const { user } = useAuth()
+  const { language, primary } = useSettings()
+  const t = getT(language)
+  const priorities = getPriorities(t)
+
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState('')
@@ -58,10 +72,8 @@ export default function Tasks() {
 
   const fetchTasks = async () => {
     const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('date', today)
+      .from('tasks').select('*')
+      .eq('user_id', user.id).eq('date', today)
       .order('created_at', { ascending: true })
     setTasks(data || [])
     setLoading(false)
@@ -74,19 +86,12 @@ export default function Tasks() {
     if (!title.trim()) return
     setAdding(true)
     const { data } = await supabase.from('tasks').insert({
-      user_id: user.id,
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      done: false,
-      date: today
+      user_id: user.id, title: title.trim(),
+      description: description.trim(), priority, done: false, date: today,
     }).select().single()
     if (data) setTasks(prev => [...prev, data])
-    setTitle('')
-    setDescription('')
-    setPriority('media')
-    setShowForm(false)
-    setAdding(false)
+    setTitle(''); setDescription(''); setPriority('media')
+    setShowForm(false); setAdding(false)
   }
 
   const toggleTask = async (task) => {
@@ -100,83 +105,104 @@ export default function Tasks() {
     setTasks(prev => prev.filter(t => t.id !== id))
   }
 
-  const done = tasks.filter(t => t.done).length
-  const pct = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0
-  const pending = tasks.filter(t => !t.done)
+  const done      = tasks.filter(t => t.done).length
+  const pct       = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0
+  const pending   = tasks.filter(t => !t.done)
   const completed = tasks.filter(t => t.done)
+
+  const inputStyle = {
+    width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-md)',
+    color: 'var(--text)', borderRadius: 12, padding: '10px 12px', fontSize: 13.5,
+    outline: 'none', fontFamily: 'inherit',
+  }
 
   return (
     <Layout>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
-            <CheckSquare className="text-[#ff4d2e]" size={26} />
-            Tarefas do Dia
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CheckSquare style={{ color: primary }} size={26} />
+            {t('tasks.title')}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
+            {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-[#ff4d2e] hover:bg-[#e03d1e] text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: primary, color: '#0a0a0a',
+            fontSize: 13.5, fontWeight: 600, padding: '9px 16px',
+            borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+          }}
         >
           <Plus size={16} />
-          Nova tarefa
+          {t('tasks.newTask')}
         </button>
       </div>
 
       {/* Progress */}
       {tasks.length > 0 && (
-        <div className="bg-[#141414] border border-white/8 rounded-2xl p-5 mb-6 flex items-center gap-5">
-          <div className="flex-1">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-white/70">{done} de {tasks.length} concluídas</span>
-              <span className="text-[#ff4d2e] font-semibold">{pct}%</span>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-dim)' }}>
+                {done} {t('tasks.of')} {tasks.length} {t('tasks.concluded')}
+              </span>
+              <span style={{ color: primary, fontWeight: 600, fontSize: 14 }}>{pct}%</span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
-              <div className="h-2 bg-[#ff4d2e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            <div style={{ background: 'var(--border-md)', borderRadius: 999, height: 7 }}>
+              <div style={{ height: 7, background: primary, borderRadius: 999, width: `${pct}%`, transition: 'width 0.5s ease' }} />
             </div>
           </div>
-          {pct === 100 && <div className="text-2xl animate-bounce">🏆</div>}
+          {pct === 100 && <div style={{ fontSize: 24 }} className="animate-bounce">🏆</div>}
         </div>
       )}
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={addTask} className="bg-[#141414] border border-[#ff4d2e]/20 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-white/70 text-sm">Nova tarefa</h3>
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="O que você precisa fazer?"
-            autoFocus required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-          />
-          <input
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Descrição (opcional)"
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-          />
-          <div className="flex gap-2">
-            {priorities.map(p => (
-              <button key={p.value} type="button" onClick={() => setPriority(p.value)}
-                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${
-                  priority === p.value ? p.color : 'border-white/10 text-white/40 hover:bg-white/5'
-                }`}>
-                <Flag size={12} />{p.label}
+        <div style={{ background: 'var(--surface)', border: `1px solid ${primary}33`, borderRadius: 20, padding: 20, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 12 }}>{t('tasks.newLabel')}</h3>
+          <form onSubmit={addTask} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <input
+              value={title} onChange={e => setTitle(e.target.value)}
+              placeholder={t('tasks.placeholder')} autoFocus required
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+            />
+            <input
+              value={description} onChange={e => setDescription(e.target.value)}
+              placeholder={t('tasks.descPlaceholder')}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              {priorities.map(p => (
+                <button key={p.value} type="button" onClick={() => setPriority(p.value)}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${
+                    priority === p.value ? p.color : 'border-white/10 text-white/40 hover:bg-white/5'
+                  }`}>
+                  <Flag size={12} />{p.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button type="button" onClick={() => setShowForm(false)}
+                style={{ fontSize: 13.5, color: 'var(--text-muted)', padding: '8px 16px', borderRadius: 10, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('tasks.cancel')}
               </button>
-            ))}
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition">Cancelar</button>
-            <button type="submit" disabled={adding} className="text-sm bg-[#ff4d2e] text-black font-semibold px-4 py-2 rounded-xl hover:bg-[#e03d1e] transition flex items-center gap-2">
-              {adding && <Loader2 size={14} className="animate-spin" />}Adicionar
-            </button>
-          </div>
-        </form>
+              <button type="submit" disabled={adding}
+                style={{ fontSize: 13.5, background: primary, color: '#0a0a0a', fontWeight: 600, padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+                {adding && <Loader2 size={14} className="animate-spin" />}
+                {t('tasks.add')}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Task list */}
@@ -185,26 +211,34 @@ export default function Tasks() {
           <Loader2 size={28} className="animate-spin text-[#ff4d2e]" />
         </div>
       ) : tasks.length === 0 ? (
-        <div className="text-center py-16 text-white/30">
-          <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-white/50">Nenhuma tarefa hoje</p>
-          <p className="text-sm mt-1">Clique em "Nova tarefa" para começar</p>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-muted)' }}>
+          <CheckSquare size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p style={{ fontWeight: 500, color: 'var(--text-dim)', marginBottom: 4 }}>{t('tasks.empty')}</p>
+          <p style={{ fontSize: 13 }}>{t('tasks.emptyHint')}</p>
         </div>
       ) : (
         <div className="space-y-4">
           {pending.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">Pendentes ({pending.length})</h3>
+              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                {t('tasks.pending')} ({pending.length})
+              </h3>
               <div className="space-y-2">
-                {pending.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />)}
+                {pending.map(task => (
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} />
+                ))}
               </div>
             </div>
           )}
           {completed.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2 mt-4">Concluídas ({completed.length})</h3>
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                {t('tasks.completed')} ({completed.length})
+              </h3>
               <div className="space-y-2">
-                {completed.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />)}
+                {completed.map(task => (
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} />
+                ))}
               </div>
             </div>
           )}

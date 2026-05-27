@@ -1,61 +1,78 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSettings } from '../../contexts/SettingsContext'
+import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat } from 'lucide-react'
 
-const categories = [
-  { value: 'peito',   label: 'Peito',   emoji: '💪' },
-  { value: 'costas',  label: 'Costas',  emoji: '🔙' },
-  { value: 'pernas',  label: 'Pernas',  emoji: '🦵' },
-  { value: 'ombros',  label: 'Ombros',  emoji: '🏋️' },
-  { value: 'biceps',  label: 'Bíceps',  emoji: '💪' },
-  { value: 'triceps', label: 'Tríceps', emoji: '💪' },
-  { value: 'abdomen', label: 'Abdômen', emoji: '🔥' },
-  { value: 'cardio',  label: 'Cardio',  emoji: '🏃' },
-  { value: 'outro',   label: 'Outro',   emoji: '⚡' },
-]
+const categories = {
+  pt: [
+    { value: 'peito',   label: 'Peito',   emoji: '💪' },
+    { value: 'costas',  label: 'Costas',  emoji: '🔙' },
+    { value: 'pernas',  label: 'Pernas',  emoji: '🦵' },
+    { value: 'ombros',  label: 'Ombros',  emoji: '🏋️' },
+    { value: 'biceps',  label: 'Bíceps',  emoji: '💪' },
+    { value: 'triceps', label: 'Tríceps', emoji: '💪' },
+    { value: 'abdomen', label: 'Abdômen', emoji: '🔥' },
+    { value: 'cardio',  label: 'Cardio',  emoji: '🏃' },
+    { value: 'outro',   label: 'Outro',   emoji: '⚡' },
+  ],
+  en: [
+    { value: 'peito',   label: 'Chest',       emoji: '💪' },
+    { value: 'costas',  label: 'Back',         emoji: '🔙' },
+    { value: 'pernas',  label: 'Legs',         emoji: '🦵' },
+    { value: 'ombros',  label: 'Shoulders',    emoji: '🏋️' },
+    { value: 'biceps',  label: 'Biceps',       emoji: '💪' },
+    { value: 'triceps', label: 'Triceps',      emoji: '💪' },
+    { value: 'abdomen', label: 'Core / Abs',   emoji: '🔥' },
+    { value: 'cardio',  label: 'Cardio',       emoji: '🏃' },
+    { value: 'outro',   label: 'Other',        emoji: '⚡' },
+  ],
+}
 
-function ExerciseCard({ exercise, onToggle, onDelete }) {
+function ExerciseCard({ exercise, onToggle, onDelete, cats, primary }) {
   const [deleting, setDeleting] = useState(false)
-  const cat = categories.find(c => c.value === exercise.category) || categories[8]
+  const cat = cats.find(c => c.value === exercise.category) || cats[8]
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
-      exercise.done
-        ? 'opacity-50 border-white/5 bg-white/[0.02]'
-        : 'bg-[#141414] border-white/10 hover:border-white/20'
-    }`}>
-      <button onClick={() => onToggle(exercise)} className="mt-0.5 flex-shrink-0">
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12, padding: 16,
+      borderRadius: 14, border: `1px solid ${exercise.done ? 'var(--border)' : 'var(--border-md)'}`,
+      background: exercise.done ? 'transparent' : 'var(--surface)',
+      opacity: exercise.done ? 0.55 : 1,
+      transition: 'all 0.2s',
+    }}>
+      <button onClick={() => onToggle(exercise)} style={{ marginTop: 2, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'inherit' }}>
         {exercise.done
-          ? <CheckCircle2 size={20} className="text-[#ff4d2e]" style={{ fill: 'rgba(255,77,46,0.2)' }} />
-          : <Circle size={20} className="text-white/20 hover:text-[#ff4d2e] transition" />
+          ? <CheckCircle2 size={20} style={{ color: primary, fill: `${primary}33` }} />
+          : <Circle size={20} style={{ color: 'var(--text-faint)' }} className="hover:text-[#ff4d2e] transition" />
         }
       </button>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-base">{cat.emoji}</span>
-          <p className={`text-sm font-medium ${exercise.done ? 'line-through text-white/30' : 'text-white/90'}`}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 15 }}>{cat.emoji}</span>
+          <p style={{ fontSize: 13.5, fontWeight: 500, color: exercise.done ? 'var(--text-muted)' : 'var(--text)', textDecoration: exercise.done ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {exercise.name}
           </p>
         </div>
-        <div className="flex items-center gap-4 mt-1.5 flex-wrap">
+        <div style={{ display: 'flex', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
           {exercise.sets && (
-            <span className="text-xs text-white/40 flex items-center gap-1">
-              <Repeat size={11} /> {exercise.sets} séries
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Repeat size={11} /> {exercise.sets}x
             </span>
           )}
           {exercise.reps && (
-            <span className="text-xs text-white/40 flex items-center gap-1">
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Zap size={11} /> {exercise.reps} reps
             </span>
           )}
           {exercise.duration && (
-            <span className="text-xs text-white/40 flex items-center gap-1">
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Clock size={11} /> {exercise.duration} min
             </span>
           )}
-          <span className="text-xs font-medium text-[#ff4d2e] bg-[#ff4d2e]/10 px-2 py-0.5 rounded-lg border border-[#ff4d2e]/20">
+          <span style={{ fontSize: 11.5, fontWeight: 500, color: primary, background: `${primary}18`, padding: '2px 8px', borderRadius: 8, border: `1px solid ${primary}33` }}>
             {cat.label}
           </span>
         </div>
@@ -63,7 +80,8 @@ function ExerciseCard({ exercise, onToggle, onDelete }) {
       <button
         onClick={async () => { setDeleting(true); await onDelete(exercise.id) }}
         disabled={deleting}
-        className="flex-shrink-0 text-white/20 hover:text-red-400 transition"
+        style={{ color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+        className="hover:text-red-400 transition"
       >
         {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
       </button>
@@ -73,6 +91,10 @@ function ExerciseCard({ exercise, onToggle, onDelete }) {
 
 export default function Workout() {
   const { user } = useAuth()
+  const { language, primary } = useSettings()
+  const t = getT(language)
+  const cats = categories[language] || categories.pt
+
   const [exercises, setExercises] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -87,10 +109,8 @@ export default function Workout() {
 
   const fetchExercises = async () => {
     const { data } = await supabase
-      .from('workouts')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('date', today)
+      .from('workouts').select('*')
+      .eq('user_id', user.id).eq('date', today)
       .order('created_at', { ascending: true })
     setExercises(data || [])
     setLoading(false)
@@ -103,27 +123,19 @@ export default function Workout() {
     if (!name.trim()) return
     setAdding(true)
     const { data } = await supabase.from('workouts').insert({
-      user_id: user.id,
-      name: name.trim(),
-      category,
+      user_id: user.id, name: name.trim(), category,
       sets: sets ? parseInt(sets) : null,
       reps: reps ? parseInt(reps) : null,
       duration: duration ? parseInt(duration) : null,
-      done: false,
-      date: today
+      done: false, date: today,
     }).select().single()
     if (data) setExercises(prev => [...prev, data])
-    setName('')
-    setSets('')
-    setReps('')
-    setDuration('')
-    setShowForm(false)
-    setAdding(false)
+    setName(''); setSets(''); setReps(''); setDuration('')
+    setShowForm(false); setAdding(false)
   }
 
   const toggleExercise = async (ex) => {
-    const { data } = await supabase
-      .from('workouts').update({ done: !ex.done }).eq('id', ex.id).select().single()
+    const { data } = await supabase.from('workouts').update({ done: !ex.done }).eq('id', ex.id).select().single()
     if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
   }
 
@@ -132,171 +144,161 @@ export default function Workout() {
     setExercises(prev => prev.filter(e => e.id !== id))
   }
 
-  const done = exercises.filter(e => e.done).length
-  const pct = exercises.length > 0 ? Math.round((done / exercises.length) * 100) : 0
-  const pending = exercises.filter(e => !e.done)
+  const done      = exercises.filter(e => e.done).length
+  const pct       = exercises.length > 0 ? Math.round((done / exercises.length) * 100) : 0
+  const pending   = exercises.filter(e => !e.done)
   const completed = exercises.filter(e => e.done)
+
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box',
+    background: 'var(--input-bg)', border: '1px solid var(--border-md)',
+    color: 'var(--text)', borderRadius: 12, padding: '10px 12px',
+    fontSize: 13.5, outline: 'none', fontFamily: 'inherit',
+  }
 
   return (
     <Layout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
-            <Dumbbell className="text-[#ff4d2e]" size={26} />
-            Treino de Hoje
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+            <Dumbbell style={{ color: primary }} size={26} />
+            {t('workout.title')}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
+            {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-[#ff4d2e] hover:bg-[#e03d1e] text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: primary, color: '#0a0a0a', fontSize: 13.5, fontWeight: 600, padding: '9px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
         >
           <Plus size={16} />
-          Adicionar exercício
+          {t('workout.addExercise')}
         </button>
       </div>
 
       {/* Stats */}
       {exercises.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-white/90">{done}</p>
-            <p className="text-xs text-white/40 mt-0.5">Feitos</p>
-          </div>
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-[#ff4d2e]">{pct}%</p>
-            <p className="text-xs text-white/40 mt-0.5">Concluído</p>
-          </div>
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-white/90">{exercises.length}</p>
-            <p className="text-xs text-white/40 mt-0.5">Total</p>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+          {[
+            { val: done,            label: t('workout.done')    },
+            { val: `${pct}%`,       label: t('workout.percent'), color: primary },
+            { val: exercises.length, label: t('workout.total')   },
+          ].map(({ val, label, color }) => (
+            <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 16, textAlign: 'center' }}>
+              <p style={{ fontSize: 22, fontWeight: 700, color: color || 'var(--text)', margin: 0 }}>{val}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Progress bar */}
       {exercises.length > 0 && (
-        <div className="bg-[#141414] border border-white/8 rounded-2xl p-5 mb-6 flex items-center gap-5">
-          <div className="flex-1">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-white/70">{done} de {exercises.length} exercícios</span>
-              <span className="text-[#ff4d2e] font-semibold">{pct}%</span>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-dim)' }}>
+                {done} {t('tasks.of')} {exercises.length} {t('workout.exercises')}
+              </span>
+              <span style={{ color: primary, fontWeight: 600 }}>{pct}%</span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
-              <div className="h-2 bg-[#ff4d2e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            <div style={{ background: 'var(--border-md)', borderRadius: 999, height: 7 }}>
+              <div style={{ height: 7, background: primary, borderRadius: 999, width: `${pct}%`, transition: 'width 0.5s ease' }} />
             </div>
           </div>
-          {pct === 100 && <div className="text-2xl animate-bounce">🔥</div>}
+          {pct === 100 && <div style={{ fontSize: 22 }} className="animate-bounce">🔥</div>}
         </div>
       )}
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={addExercise} className="bg-[#141414] border border-[#ff4d2e]/20 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-white/70 text-sm">Novo exercício</h3>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Nome do exercício. Ex: Supino reto"
-            autoFocus
-            required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-          />
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className="w-full bg-[#0a0a0a] border border-white/10 text-white/80 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-          >
-            {categories.map(c => (
-              <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-            ))}
-          </select>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Séries</label>
-              <input
-                type="number" min="1"
-                value={sets} onChange={e => setSets(e.target.value)}
-                placeholder="Ex: 4"
-                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Repetições</label>
-              <input
-                type="number" min="1"
-                value={reps} onChange={e => setReps(e.target.value)}
-                placeholder="Ex: 12"
-                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Duração (min)</label>
-              <input
-                type="number" min="1"
-                value={duration} onChange={e => setDuration(e.target.value)}
-                placeholder="Ex: 30"
-                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition"
+        <div style={{ background: 'var(--surface)', border: `1px solid ${primary}33`, borderRadius: 20, padding: 20, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 12 }}>{t('workout.newLabel')}</h3>
+          <form onSubmit={addExercise} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <input
+              value={name} onChange={e => setName(e.target.value)}
+              placeholder={t('workout.placeholder')} autoFocus required
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+            />
+            <select
+              value={category} onChange={e => setCategory(e.target.value)}
+              style={{ ...inputStyle, padding: '10px 12px' }}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={adding}
-              className="text-sm bg-[#ff4d2e] text-black font-semibold px-4 py-2 rounded-xl hover:bg-[#e03d1e] transition flex items-center gap-2"
-            >
-              {adding && <Loader2 size={14} className="animate-spin" />}
-              Adicionar
-            </button>
-          </div>
-        </form>
+              {cats.map(c => (
+                <option key={c.value} value={c.value} style={{ background: 'var(--surface)' }}>
+                  {c.emoji} {c.label}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              {[
+                { val: sets,     set: setSets,     label: t('workout.sets'),     placeholder: '4' },
+                { val: reps,     set: setReps,     label: t('workout.reps'),     placeholder: '12' },
+                { val: duration, set: setDuration, label: t('workout.duration'), placeholder: '30' },
+              ].map(({ val, set, label, placeholder }) => (
+                <div key={label}>
+                  <label style={{ fontSize: 11.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{label}</label>
+                  <input
+                    type="number" min="1" value={val} onChange={e => set(e.target.value)}
+                    placeholder={placeholder}
+                    style={inputStyle}
+                    onFocus={e => e.target.style.borderColor = primary}
+                    onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button type="button" onClick={() => setShowForm(false)}
+                style={{ fontSize: 13.5, color: 'var(--text-muted)', padding: '8px 16px', borderRadius: 10, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {t('workout.cancel')}
+              </button>
+              <button type="submit" disabled={adding}
+                style={{ fontSize: 13.5, background: primary, color: '#0a0a0a', fontWeight: 600, padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}>
+                {adding && <Loader2 size={14} className="animate-spin" />}
+                {t('workout.add')}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 size={28} className="animate-spin text-[#ff4d2e]" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <Loader2 size={28} style={{ color: primary }} className="animate-spin" />
         </div>
       ) : exercises.length === 0 ? (
-        <div className="text-center py-16 text-white/30">
-          <Dumbbell size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-white/50">Nenhum exercício hoje</p>
-          <p className="text-sm mt-1">Monte seu treino clicando em "Adicionar exercício"</p>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-muted)' }}>
+          <Dumbbell size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p style={{ fontWeight: 500, color: 'var(--text-dim)', marginBottom: 4 }}>{t('workout.empty')}</p>
+          <p style={{ fontSize: 13 }}>{t('workout.emptyHint')}</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {pending.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">
-                Pendentes ({pending.length})
+              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                {t('workout.pending')} ({pending.length})
               </h3>
-              <div className="space-y-2">
-                {pending.map(e => (
-                  <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {pending.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} cats={cats} primary={primary} />)}
               </div>
             </div>
           )}
           {completed.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2 mt-4">
-                Concluídos ({completed.length})
+              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                {t('workout.completed')} ({completed.length})
               </h3>
-              <div className="space-y-2">
-                {completed.map(e => (
-                  <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {completed.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} cats={cats} primary={primary} />)}
               </div>
             </div>
           )}
