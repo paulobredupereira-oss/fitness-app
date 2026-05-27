@@ -3,13 +3,20 @@ import AIChat from '../ui/AIChat'
 
 export default function Layout({ children }) {
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 ml-60 p-8 min-h-screen">
-        <div className="max-w-5xl mx-auto">
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a' }}>
+      {/* Sidebar — oculta no mobile */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+
+      {/* Main content */}
+      <main style={{ flex: 1, padding: '32px', minHeight: '100vh', marginLeft: 0 }}
+        className="md:ml-[232px]">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           {children}
         </div>
       </main>
+
       <AIChat />
     </div>
   )

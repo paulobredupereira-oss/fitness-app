@@ -5,58 +5,67 @@ import Layout from '../../components/layout/Layout'
 import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat } from 'lucide-react'
 
 const categories = [
-  { value: 'peito', label: 'Peito', emoji: '💪' },
-  { value: 'costas', label: 'Costas', emoji: '🔙' },
-  { value: 'pernas', label: 'Pernas', emoji: '🦵' },
-  { value: 'ombros', label: 'Ombros', emoji: '🏋️' },
-  { value: 'biceps', label: 'Bíceps', emoji: '💪' },
+  { value: 'peito',   label: 'Peito',   emoji: '💪' },
+  { value: 'costas',  label: 'Costas',  emoji: '🔙' },
+  { value: 'pernas',  label: 'Pernas',  emoji: '🦵' },
+  { value: 'ombros',  label: 'Ombros',  emoji: '🏋️' },
+  { value: 'biceps',  label: 'Bíceps',  emoji: '💪' },
   { value: 'triceps', label: 'Tríceps', emoji: '💪' },
   { value: 'abdomen', label: 'Abdômen', emoji: '🔥' },
-  { value: 'cardio', label: 'Cardio', emoji: '🏃' },
-  { value: 'outro', label: 'Outro', emoji: '⚡' },
+  { value: 'cardio',  label: 'Cardio',  emoji: '🏃' },
+  { value: 'outro',   label: 'Outro',   emoji: '⚡' },
 ]
 
 function ExerciseCard({ exercise, onToggle, onDelete }) {
+  const [deleting, setDeleting] = useState(false)
   const cat = categories.find(c => c.value === exercise.category) || categories[8]
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${exercise.done ? 'opacity-60 border-slate-100 bg-white' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+    <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+      exercise.done
+        ? 'opacity-50 border-white/5 bg-white/[0.02]'
+        : 'bg-[#141414] border-white/10 hover:border-white/20'
+    }`}>
       <button onClick={() => onToggle(exercise)} className="mt-0.5 flex-shrink-0">
         {exercise.done
-          ? <CheckCircle2 size={20} className="text-orange-500 fill-orange-100" />
-          : <Circle size={20} className="text-slate-300 hover:text-orange-400 transition" />
+          ? <CheckCircle2 size={20} className="text-[#ff4d2e]" style={{ fill: 'rgba(255,77,46,0.2)' }} />
+          : <Circle size={20} className="text-white/20 hover:text-[#ff4d2e] transition" />
         }
       </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-base">{cat.emoji}</span>
-          <p className={`text-sm font-medium ${exercise.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+          <p className={`text-sm font-medium ${exercise.done ? 'line-through text-white/30' : 'text-white/90'}`}>
             {exercise.name}
           </p>
         </div>
         <div className="flex items-center gap-4 mt-1.5 flex-wrap">
           {exercise.sets && (
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-white/40 flex items-center gap-1">
               <Repeat size={11} /> {exercise.sets} séries
             </span>
           )}
           {exercise.reps && (
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-white/40 flex items-center gap-1">
               <Zap size={11} /> {exercise.reps} reps
             </span>
           )}
           {exercise.duration && (
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-white/40 flex items-center gap-1">
               <Clock size={11} /> {exercise.duration} min
             </span>
           )}
-          <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100">
+          <span className="text-xs font-medium text-[#ff4d2e] bg-[#ff4d2e]/10 px-2 py-0.5 rounded-lg border border-[#ff4d2e]/20">
             {cat.label}
           </span>
         </div>
       </div>
-      <button onClick={() => onDelete(exercise.id)} className="text-slate-300 hover:text-red-400 transition flex-shrink-0">
-        <Trash2 size={15} />
+      <button
+        onClick={async () => { setDeleting(true); await onDelete(exercise.id) }}
+        disabled={deleting}
+        className="flex-shrink-0 text-white/20 hover:text-red-400 transition"
+      >
+        {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
       </button>
     </div>
   )
@@ -113,7 +122,8 @@ export default function Workout() {
   }
 
   const toggleExercise = async (ex) => {
-    const { data } = await supabase.from('workouts').update({ done: !ex.done }).eq('id', ex.id).select().single()
+    const { data } = await supabase
+      .from('workouts').update({ done: !ex.done }).eq('id', ex.id).select().single()
     if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
   }
 
@@ -129,19 +139,20 @@ export default function Workout() {
 
   return (
     <Layout>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Dumbbell className="text-orange-500" size={26} />
+          <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
+            <Dumbbell className="text-[#ff4d2e]" size={26} />
             Treino de Hoje
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-white/40 text-sm mt-1">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+          className="flex items-center gap-2 bg-[#ff4d2e] hover:bg-[#e03d1e] text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
         >
           <Plus size={16} />
           Adicionar exercício
@@ -151,53 +162,53 @@ export default function Workout() {
       {/* Stats */}
       {exercises.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-slate-800">{done}</p>
-            <p className="text-xs text-slate-500 mt-0.5">Feitos</p>
+          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
+            <p className="text-2xl font-bold text-white/90">{done}</p>
+            <p className="text-xs text-white/40 mt-0.5">Feitos</p>
           </div>
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-orange-500">{pct}%</p>
-            <p className="text-xs text-slate-500 mt-0.5">Concluído</p>
+          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
+            <p className="text-2xl font-bold text-[#ff4d2e]">{pct}%</p>
+            <p className="text-xs text-white/40 mt-0.5">Concluído</p>
           </div>
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-slate-800">{exercises.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">Total</p>
+          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
+            <p className="text-2xl font-bold text-white/90">{exercises.length}</p>
+            <p className="text-xs text-white/40 mt-0.5">Total</p>
           </div>
         </div>
       )}
 
-      {/* Progress */}
+      {/* Progress bar */}
       {exercises.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-6">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-slate-700">{done} de {exercises.length} exercícios concluídos</span>
-            <span className="text-orange-500 font-semibold">{pct}%</span>
+        <div className="bg-[#141414] border border-white/8 rounded-2xl p-5 mb-6 flex items-center gap-5">
+          <div className="flex-1">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="font-medium text-white/70">{done} de {exercises.length} exercícios</span>
+              <span className="text-[#ff4d2e] font-semibold">{pct}%</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-2">
+              <div className="h-2 bg-[#ff4d2e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            </div>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2">
-            <div className="h-2 bg-orange-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-          </div>
-          {pct === 100 && (
-            <p className="text-center text-sm text-orange-500 font-semibold mt-3">🔥 Treino completo! Incrível!</p>
-          )}
+          {pct === 100 && <div className="text-2xl animate-bounce">🔥</div>}
         </div>
       )}
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={addExercise} className="bg-white border border-orange-100 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-slate-700 text-sm">Novo exercício</h3>
+        <form onSubmit={addExercise} className="bg-[#141414] border border-[#ff4d2e]/20 rounded-2xl p-5 mb-6 space-y-3">
+          <h3 className="font-semibold text-white/70 text-sm">Novo exercício</h3>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Nome do exercício. Ex: Supino reto"
             autoFocus
             required
-            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
           />
           <select
             value={category}
             onChange={e => setCategory(e.target.value)}
-            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition bg-white"
+            className="w-full bg-[#0a0a0a] border border-white/10 text-white/80 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
           >
             {categories.map(c => (
               <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
@@ -205,36 +216,46 @@ export default function Workout() {
           </select>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Séries</label>
+              <label className="text-xs text-white/40 mb-1 block">Séries</label>
               <input
                 type="number" min="1"
                 value={sets} onChange={e => setSets(e.target.value)}
                 placeholder="Ex: 4"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Repetições</label>
+              <label className="text-xs text-white/40 mb-1 block">Repetições</label>
               <input
                 type="number" min="1"
                 value={reps} onChange={e => setReps(e.target.value)}
                 placeholder="Ex: 12"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">Duração (min)</label>
+              <label className="text-xs text-white/40 mb-1 block">Duração (min)</label>
               <input
                 type="number" min="1"
                 value={duration} onChange={e => setDuration(e.target.value)}
                 placeholder="Ex: 30"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
               />
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition">Cancelar</button>
-            <button type="submit" disabled={adding} className="text-sm bg-orange-500 text-white font-semibold px-4 py-2 rounded-xl hover:bg-orange-600 transition flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={adding}
+              className="text-sm bg-[#ff4d2e] text-black font-semibold px-4 py-2 rounded-xl hover:bg-[#e03d1e] transition flex items-center gap-2"
+            >
               {adding && <Loader2 size={14} className="animate-spin" />}
               Adicionar
             </button>
@@ -245,29 +266,37 @@ export default function Workout() {
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 size={28} className="animate-spin text-orange-400" />
+          <Loader2 size={28} className="animate-spin text-[#ff4d2e]" />
         </div>
       ) : exercises.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-white/30">
           <Dumbbell size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Nenhum exercício hoje</p>
+          <p className="font-medium text-white/50">Nenhum exercício hoje</p>
           <p className="text-sm mt-1">Monte seu treino clicando em "Adicionar exercício"</p>
         </div>
       ) : (
         <div className="space-y-4">
           {pending.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Pendentes ({pending.length})</h3>
+              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">
+                Pendentes ({pending.length})
+              </h3>
               <div className="space-y-2">
-                {pending.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />)}
+                {pending.map(e => (
+                  <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />
+                ))}
               </div>
             </div>
           )}
           {completed.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 mt-4">Concluídos ({completed.length})</h3>
+              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2 mt-4">
+                Concluídos ({completed.length})
+              </h3>
               <div className="space-y-2">
-                {completed.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />)}
+                {completed.map(e => (
+                  <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} />
+                ))}
               </div>
             </div>
           )}

@@ -5,9 +5,9 @@ import Layout from '../../components/layout/Layout'
 import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2 } from 'lucide-react'
 
 const priorities = [
-  { value: 'alta', label: 'Alta', color: 'text-red-500 bg-red-50 border-red-100' },
-  { value: 'media', label: 'Média', color: 'text-yellow-600 bg-yellow-50 border-yellow-100' },
-  { value: 'baixa', label: 'Baixa', color: 'text-slate-500 bg-slate-50 border-slate-200' },
+  { value: 'alta', label: 'Alta', color: 'text-red-400 bg-red-950 border-red-900' },
+  { value: 'media', label: 'Média', color: 'text-yellow-400 bg-yellow-950 border-yellow-900' },
+  { value: 'baixa', label: 'Baixa', color: 'text-slate-400 bg-slate-800 border-slate-700' },
 ]
 
 function TaskItem({ task, onToggle, onDelete }) {
@@ -15,19 +15,19 @@ function TaskItem({ task, onToggle, onDelete }) {
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
   return (
-    <div className={`flex items-center gap-3 p-4 bg-white rounded-xl border transition-all ${task.done ? 'opacity-60 border-slate-100' : 'border-slate-200 hover:border-slate-300'}`}>
-      <button onClick={() => onToggle(task)} className="flex-shrink-0 text-blue-500 hover:text-blue-600 transition">
+    <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${task.done ? 'opacity-50 border-white/5 bg-white/[0.02]' : 'bg-[#141414] border-white/10 hover:border-white/20'}`}>
+      <button onClick={() => onToggle(task)} className="flex-shrink-0 transition">
         {task.done
-          ? <CheckCircle2 size={22} className="text-blue-500 fill-blue-100" />
-          : <Circle size={22} className="text-slate-300 hover:text-blue-400 transition" />
+          ? <CheckCircle2 size={22} className="text-[#ff4d2e]" style={{ fill: 'rgba(255,77,46,0.2)' }} />
+          : <Circle size={22} className="text-white/20 hover:text-[#ff4d2e] transition" />
         }
       </button>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate ${task.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+        <p className={`text-sm font-medium truncate ${task.done ? 'line-through text-white/30' : 'text-white/90'}`}>
           {task.title}
         </p>
         {task.description && (
-          <p className="text-xs text-slate-400 mt-0.5 truncate">{task.description}</p>
+          <p className="text-xs text-white/30 mt-0.5 truncate">{task.description}</p>
         )}
       </div>
       <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${p.color} flex-shrink-0`}>
@@ -36,7 +36,7 @@ function TaskItem({ task, onToggle, onDelete }) {
       <button
         onClick={async () => { setDeleting(true); await onDelete(task.id) }}
         disabled={deleting}
-        className="flex-shrink-0 text-slate-300 hover:text-red-400 transition"
+        className="flex-shrink-0 text-white/20 hover:text-red-400 transition"
       >
         {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
       </button>
@@ -110,17 +110,17 @@ export default function Tasks() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <CheckSquare className="text-indigo-500" size={26} />
+          <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
+            <CheckSquare className="text-[#ff4d2e]" size={26} />
             Tarefas do Dia
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-white/40 text-sm mt-1">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+          className="flex items-center gap-2 bg-[#ff4d2e] hover:bg-[#e03d1e] text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
         >
           <Plus size={16} />
           Nova tarefa
@@ -129,60 +129,51 @@ export default function Tasks() {
 
       {/* Progress */}
       {tasks.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-6 flex items-center gap-5">
+        <div className="bg-[#141414] border border-white/8 rounded-2xl p-5 mb-6 flex items-center gap-5">
           <div className="flex-1">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-slate-700">{done} de {tasks.length} concluídas</span>
-              <span className="text-indigo-600 font-semibold">{pct}%</span>
+              <span className="font-medium text-white/70">{done} de {tasks.length} concluídas</span>
+              <span className="text-[#ff4d2e] font-semibold">{pct}%</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2">
-              <div className="h-2 bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+            <div className="w-full bg-white/10 rounded-full h-2">
+              <div className="h-2 bg-[#ff4d2e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
-          {pct === 100 && (
-            <div className="text-2xl animate-bounce">🏆</div>
-          )}
+          {pct === 100 && <div className="text-2xl animate-bounce">🏆</div>}
         </div>
       )}
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={addTask} className="bg-white border border-indigo-100 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-slate-700 text-sm">Nova tarefa</h3>
+        <form onSubmit={addTask} className="bg-[#141414] border border-[#ff4d2e]/20 rounded-2xl p-5 mb-6 space-y-3">
+          <h3 className="font-semibold text-white/70 text-sm">Nova tarefa</h3>
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="O que você precisa fazer?"
-            autoFocus
-            required
-            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            autoFocus required
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
           />
           <input
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Descrição (opcional)"
-            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition"
           />
           <div className="flex gap-2">
             {priorities.map(p => (
-              <button
-                key={p.value}
-                type="button"
-                onClick={() => setPriority(p.value)}
+              <button key={p.value} type="button" onClick={() => setPriority(p.value)}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${
-                  priority === p.value ? p.color + ' ring-2 ring-offset-1 ring-indigo-300' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                }`}
-              >
-                <Flag size={12} />
-                {p.label}
+                  priority === p.value ? p.color : 'border-white/10 text-white/40 hover:bg-white/5'
+                }`}>
+                <Flag size={12} />{p.label}
               </button>
             ))}
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-50 transition">Cancelar</button>
-            <button type="submit" disabled={adding} className="text-sm bg-indigo-600 text-white font-semibold px-4 py-2 rounded-xl hover:bg-indigo-700 transition flex items-center gap-2">
-              {adding && <Loader2 size={14} className="animate-spin" />}
-              Adicionar
+            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition">Cancelar</button>
+            <button type="submit" disabled={adding} className="text-sm bg-[#ff4d2e] text-black font-semibold px-4 py-2 rounded-xl hover:bg-[#e03d1e] transition flex items-center gap-2">
+              {adding && <Loader2 size={14} className="animate-spin" />}Adicionar
             </button>
           </div>
         </form>
@@ -191,19 +182,19 @@ export default function Tasks() {
       {/* Task list */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 size={28} className="animate-spin text-indigo-400" />
+          <Loader2 size={28} className="animate-spin text-[#ff4d2e]" />
         </div>
       ) : tasks.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-white/30">
           <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Nenhuma tarefa hoje</p>
+          <p className="font-medium text-white/50">Nenhuma tarefa hoje</p>
           <p className="text-sm mt-1">Clique em "Nova tarefa" para começar</p>
         </div>
       ) : (
         <div className="space-y-4">
           {pending.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Pendentes ({pending.length})</h3>
+              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">Pendentes ({pending.length})</h3>
               <div className="space-y-2">
                 {pending.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />)}
               </div>
@@ -211,7 +202,7 @@ export default function Tasks() {
           )}
           {completed.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 mt-4">Concluídas ({completed.length})</h3>
+              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2 mt-4">Concluídas ({completed.length})</h3>
               <div className="space-y-2">
                 {completed.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTask} onDelete={deleteTask} />)}
               </div>
