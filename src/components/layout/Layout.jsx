@@ -25,12 +25,11 @@ function MobileNav() {
 
   return (
     <nav
-      className="md:hidden"
+      className="flex md:hidden"
       style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
         background: 'var(--sidebar-bg)',
         borderTop: '1px solid var(--border)',
-        display: 'flex',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
