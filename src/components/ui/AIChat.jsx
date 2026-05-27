@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Bot, User, Dumbbell } from 'lucide-react'
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 
 const SYSTEM_PROMPT = `Você é o FitAI, um assistente pessoal especializado em fitness, musculação, nutrição e saúde.
 Você é como um personal trainer e nutricionista brasileiro amigável e motivador.
@@ -15,31 +15,27 @@ Foque em responder dúvidas sobre:
 Seja direto e dê dicas práticas. Limite respostas a no máximo 3-4 parágrafos curtos.
 Se a pergunta não for sobre fitness/saúde, redirecione gentilmente para o tema.`
 
-async function askGemini(messages) {
-  const contents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }]
-  }))
+async function askGroq(messages) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...messages.map(m => ({ role: m.role, content: m.content }))
+      ],
+      temperature: 0.7,
+      max_tokens: 512,
+    })
+  })
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 512,
-        }
-      })
-    }
-  )
-
-  if (!res.ok) throw new Error('Erro na API Gemini')
+  if (!res.ok) throw new Error('Erro na API Groq')
   const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Desculpe, não consegui responder agora.'
+  return data.choices?.[0]?.message?.content || 'Desculpe, não consegui responder agora.'
 }
 
 export default function AIChat() {
@@ -57,7 +53,7 @@ export default function AIChat() {
   const inputRef = useRef(null)
 
   useEffect(() => {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'SUA_CHAVE_AQUI') {
+    if (!GROQ_API_KEY || GROQ_API_KEY === 'SUA_CHAVE_AQUI') {
       setNoKey(true)
     }
   }, [])
@@ -80,12 +76,12 @@ export default function AIChat() {
     setLoading(true)
 
     try {
-      const reply = await askGemini(newMessages)
+      const reply = await askGroq(newMessages)
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Não consegui responder agora. Verifique sua chave da API Gemini no arquivo .env.'
+        content: '⚠️ Não consegui responder agora. Verifique sua chave da API Groq no Vercel.'
       }])
     } finally {
       setLoading(false)
@@ -127,8 +123,8 @@ export default function AIChat() {
           {noKey && (
             <div className="mx-3 mt-3 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5 text-xs text-yellow-700 flex-shrink-0">
               ⚠️ <strong>Chave da API não configurada.</strong> Adicione{' '}
-              <code className="bg-yellow-100 px-1 rounded">VITE_GEMINI_API_KEY</code>{' '}
-              no arquivo <code className="bg-yellow-100 px-1 rounded">.env</code> para ativar a IA.
+              <code className="bg-yellow-100 px-1 rounded">VITE_GROQ_API_KEY</code>{' '}
+              nas variáveis de ambiente do Vercel para ativar a IA.
             </div>
           )}
 
