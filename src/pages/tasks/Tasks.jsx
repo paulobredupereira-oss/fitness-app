@@ -4,6 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
+import BMRCalculator from '../../components/ui/BMRCalculator'
 import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2 } from 'lucide-react'
 
 function getPriorities(t) {
@@ -244,6 +245,8 @@ export default function Tasks() {
           )}
         </div>
       )}
+      {/* BMR Calculator */}
+      <BMRCalculator />
     </Layout>
   )
 }
