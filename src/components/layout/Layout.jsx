@@ -6,8 +6,8 @@ import { getT } from '../../lib/i18n'
 
 /* ── Mobile bottom nav labels ─────────────────────────────────────── */
 const SHORT = {
-  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', settings: 'Config' },
-  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',  settings: 'Settings' },
+  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', bmr: 'TMB', settings: 'Config' },
+  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',  bmr: 'BMR', settings: 'Settings' },
 }
 
 /* ── Mobile Tab Bar ────────────────────────────────────────────────── */
@@ -20,6 +20,7 @@ function MobileNav() {
     { to: '/treinos',       label: labels.workouts,  Icon: IcFlame   },
     { to: '/dieta',         label: labels.nutrition, Icon: IcApple   },
     { to: '/tarefas',       label: labels.tasks,     Icon: IcCheck   },
+    { to: '/calculadora',   label: labels.bmr,       Icon: IcCalc    },
     { to: '/configuracoes', label: labels.settings,  Icon: IcGear    },
   ]
 
@@ -129,6 +130,23 @@ function IcCheck({ size = 22, style }) {
       stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
       <polyline points="9 11 12 14 22 4"/>
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+  )
+}
+function IcCalc({ size = 22, style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <rect x="4" y="2" width="16" height="20" rx="2"/>
+      <line x1="8" y1="6" x2="16" y2="6"/>
+      <circle cx="8"  cy="10" r="0.6" fill="currentColor"/>
+      <circle cx="12" cy="10" r="0.6" fill="currentColor"/>
+      <circle cx="16" cy="10" r="0.6" fill="currentColor"/>
+      <circle cx="8"  cy="14" r="0.6" fill="currentColor"/>
+      <circle cx="12" cy="14" r="0.6" fill="currentColor"/>
+      <circle cx="16" cy="14" r="0.6" fill="currentColor"/>
+      <line x1="8" y1="18" x2="12" y2="18"/>
+      <circle cx="16" cy="18" r="0.6" fill="currentColor"/>
     </svg>
   )
 }

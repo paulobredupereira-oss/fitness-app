@@ -86,10 +86,11 @@ export default function Sidebar() {
   }, [user])
 
   const navItems = [
-    { to: '/dashboard', icon: IconGrid,  label: t('nav.dashboard') },
-    { to: '/treinos',   icon: IconFlame, label: t('nav.workouts')  },
-    { to: '/dieta',     icon: IconApple, label: t('nav.nutrition') },
-    { to: '/tarefas',   icon: IconChart, label: t('nav.tasks')     },
+    { to: '/dashboard',   icon: IconGrid,   label: t('nav.dashboard') },
+    { to: '/treinos',     icon: IconFlame,  label: t('nav.workouts')  },
+    { to: '/dieta',       icon: IconApple,  label: t('nav.nutrition') },
+    { to: '/tarefas',     icon: IconChart,  label: t('nav.tasks')     },
+    { to: '/calculadora', icon: IconCalc,   label: t('nav.bmr')       },
   ]
 
   return (
@@ -262,6 +263,23 @@ function IconChart({ size = 16, color }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 20h18"/><path d="M6 16v-4"/><path d="M11 16V8"/><path d="M16 16v-6"/>
+    </svg>
+  )
+}
+function IconCalc({ size = 16, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2"/>
+      <line x1="8" y1="6" x2="16" y2="6"/>
+      <line x1="8" y1="10" x2="8" y2="10" strokeWidth="2.5"/>
+      <line x1="12" y1="10" x2="12" y2="10" strokeWidth="2.5"/>
+      <line x1="16" y1="10" x2="16" y2="10" strokeWidth="2.5"/>
+      <line x1="8" y1="14" x2="8" y2="14" strokeWidth="2.5"/>
+      <line x1="12" y1="14" x2="12" y2="14" strokeWidth="2.5"/>
+      <line x1="16" y1="14" x2="16" y2="14" strokeWidth="2.5"/>
+      <line x1="8" y1="18" x2="12" y2="18" strokeWidth="2.5"/>
+      <line x1="16" y1="18" x2="16" y2="18" strokeWidth="2.5"/>
     </svg>
   )
 }
