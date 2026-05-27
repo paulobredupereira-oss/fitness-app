@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { UtensilsCrossed, Plus, Trash2, CheckCircle2, Circle, Loader2, Flame } from 'lucide-react'
+import { UtensilsCrossed, Plus, Trash2, CheckCircle2, Circle, Loader2, Flame, Camera, X, ImageOff } from 'lucide-react'
 
 const mealTypes = [
   { value: 'cafe', label: '☀️ Café da manhã', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
@@ -43,6 +43,174 @@ function MealCard({ meal, onToggle, onDelete }) {
     </div>
   )
 }
+
+// ─── Álbum de Fotos ──────────────────────────────────────────────────────────
+
+function PhotoAlbum({ userId, today }) {
+  const [photos, setPhotos] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [loadingPhotos, setLoadingPhotos] = useState(true)
+  const fileInputRef = useRef(null)
+
+  const fetchPhotos = async () => {
+    const { data } = await supabase
+      .from('meal_photos')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .order('created_at', { ascending: true })
+    setPhotos(data || [])
+    setLoadingPhotos(false)
+  }
+
+  useEffect(() => { fetchPhotos() }, [userId, today])
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validação
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Formato não suportado. Use JPG, PNG ou WEBP.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Foto muito grande. Limite: 5MB.')
+      return
+    }
+
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `${userId}/${today}/photo-${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('meal-photos')
+      .upload(path, file, { contentType: file.type })
+
+    if (uploadError) {
+      alert('Erro ao fazer upload. Verifique se o bucket foi criado no Supabase.')
+      setUploading(false)
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('meal-photos')
+      .getPublicUrl(path)
+
+    const { data } = await supabase.from('meal_photos').insert({
+      user_id: userId,
+      date: today,
+      url: publicUrl,
+      path
+    }).select().single()
+
+    if (data) setPhotos(prev => [...prev, data])
+    e.target.value = ''
+    setUploading(false)
+  }
+
+  const deletePhoto = async (photo) => {
+    await supabase.storage.from('meal-photos').remove([photo.path])
+    await supabase.from('meal_photos').delete().eq('id', photo.id)
+    setPhotos(prev => prev.filter(p => p.id !== photo.id))
+    if (previewUrl === photo.url) setPreviewUrl(null)
+  }
+
+  return (
+    <div className="mt-8">
+      {/* Cabeçalho da seção */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-700 flex items-center gap-2">
+            <Camera size={18} className="text-emerald-500" />
+            Fotos do Dia
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">Registre o que você comeu hoje</p>
+        </div>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-medium px-3 py-2 rounded-xl transition disabled:opacity-50"
+        >
+          {uploading
+            ? <Loader2 size={14} className="animate-spin" />
+            : <Plus size={14} />
+          }
+          {uploading ? 'Enviando...' : 'Adicionar foto'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
+
+      {/* Grid de fotos */}
+      {loadingPhotos ? (
+        <div className="flex justify-center py-8">
+          <Loader2 size={22} className="animate-spin text-emerald-400" />
+        </div>
+      ) : photos.length === 0 ? (
+        <div className="border-2 border-dashed border-slate-200 rounded-2xl py-10 text-center">
+          <ImageOff size={32} className="mx-auto text-slate-300 mb-2" />
+          <p className="text-sm text-slate-400 font-medium">Nenhuma foto ainda</p>
+          <p className="text-xs text-slate-300 mt-1">Clique em "Adicionar foto" para registrar sua refeição</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          {photos.map(photo => (
+            <div key={photo.id} className="relative group rounded-xl overflow-hidden aspect-square bg-slate-100">
+              <img
+                src={photo.url}
+                alt="Refeição"
+                className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                onClick={() => setPreviewUrl(photo.url)}
+              />
+              <button
+                onClick={() => deletePhoto(photo)}
+                className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+          {/* Botão de upload inline no grid */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-300 hover:border-emerald-300 hover:text-emerald-400 transition disabled:opacity-50"
+          >
+            {uploading ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
+            <span className="text-xs mt-1">{uploading ? 'Enviando' : 'Foto'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Modal de preview */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <img src={previewUrl} alt="Preview" className="w-full rounded-2xl shadow-2xl" />
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="absolute top-3 right-3 w-9 h-9 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Componente principal ────────────────────────────────────────────────────
 
 export default function Diet() {
   const { user } = useAuth()
@@ -102,7 +270,6 @@ export default function Diet() {
   const totalCals = meals.filter(m => m.done && m.calories).reduce((s, m) => s + m.calories, 0)
   const pct = meals.length > 0 ? Math.round((done / meals.length) * 100) : 0
 
-  // Group by meal type
   const grouped = mealTypes.map(type => ({
     ...type,
     items: meals.filter(m => m.meal_type === type.value)
@@ -206,7 +373,7 @@ export default function Diet() {
           <Loader2 size={28} className="animate-spin text-emerald-400" />
         </div>
       ) : meals.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-10 text-slate-400">
           <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">Nenhuma refeição hoje</p>
           <p className="text-sm mt-1">Planeje sua dieta clicando em "Adicionar refeição"</p>
@@ -225,6 +392,9 @@ export default function Diet() {
           ))}
         </div>
       )}
+
+      {/* Álbum de fotos — sempre visível no final */}
+      {user && <PhotoAlbum userId={user.id} today={today} />}
     </Layout>
   )
 }

@@ -75,3 +75,57 @@ create policy "users can manage own workouts"
 create index if not exists tasks_user_date on public.tasks(user_id, date);
 create index if not exists meals_user_date on public.meals(user_id, date);
 create index if not exists workouts_user_date on public.workouts(user_id, date);
+
+-- =============================================
+-- NOVOS: Fotos das refeições
+-- =============================================
+
+-- Tabela de Fotos do Dia
+create table if not exists public.meal_photos (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  date date not null,
+  url text not null,
+  path text not null,
+  created_at timestamptz default now()
+);
+
+alter table public.meal_photos enable row level security;
+
+create policy "users can manage own meal photos"
+  on public.meal_photos for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists meal_photos_user_date on public.meal_photos(user_id, date);
+
+-- =============================================
+-- NOVOS: Storage bucket para fotos
+-- Execute este bloco separadamente no SQL Editor
+-- =============================================
+
+-- Criar bucket público para fotos de refeições
+insert into storage.buckets (id, name, public)
+values ('meal-photos', 'meal-photos', true)
+on conflict do nothing;
+
+-- Política: usuário autenticado pode fazer upload na própria pasta
+create policy "users can upload meal photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'meal-photos'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Política: qualquer um pode visualizar (bucket público)
+create policy "anyone can view meal photos"
+  on storage.objects for select
+  using (bucket_id = 'meal-photos');
+
+-- Política: usuário só pode deletar suas próprias fotos
+create policy "users can delete own meal photos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'meal-photos'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
