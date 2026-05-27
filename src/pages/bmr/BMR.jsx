@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
-import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { Activity, Calculator, Loader2, Save } from 'lucide-react'
+import { Activity, Calculator } from 'lucide-react'
 
 const ACTIVITIES = [
   { value: 'sedentary',   mult: 1.2,   pt: 'Sedentário — sem exercícios',         en: 'Sedentary — no exercise'          },
@@ -12,6 +10,8 @@ const ACTIVITIES = [
   { value: 'active',      mult: 1.725, pt: 'Muito ativo — 6 a 7 dias por semana', en: 'Very active — 6 to 7 days a week' },
   { value: 'very_active', mult: 1.9,   pt: 'Extremo — 2 vezes ao dia',            en: 'Extra active — twice a day'       },
 ]
+
+const STORAGE_KEY = 'fl-bmr-profile'
 
 /** Mifflin-St Jeor — more accurate formula */
 function computeBMR({ gender, age, height, weight }) {
@@ -22,7 +22,6 @@ function computeBMR({ gender, age, height, weight }) {
 }
 
 export default function BMR() {
-  const { user } = useAuth()
   const { primary, language } = useSettings()
   const isEn = language === 'en'
 
@@ -32,46 +31,40 @@ export default function BMR() {
   const [weight,   setWeight]   = useState('')
   const [activity, setActivity] = useState('moderate')
   const [result,   setResult]   = useState(null)
-  const [saving,   setSaving]   = useState(false)
-  const [loading,  setLoading]  = useState(true)
-  const [dbErr,    setDbErr]    = useState(false)
 
-  /* ── Load saved profile ─────────────────────────────────────── */
+  /* ── Load saved profile from localStorage ───────────────────── */
   useEffect(() => {
-    if (!user) return
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data, error }) => {
-        setLoading(false)
-        if (error && error.code !== 'PGRST116') { setDbErr(true); return }
-        if (!data) return
-        if (data.gender)         setGender(data.gender)
-        if (data.age)            setAge(String(data.age))
-        if (data.height_cm)      setHeight(String(data.height_cm))
-        if (data.weight_kg)      setWeight(String(data.weight_kg))
-        if (data.activity_level) setActivity(data.activity_level)
-        if (data.bmr && data.tdee) {
-          setResult({ bmr: data.bmr, tdee: data.tdee, savedAt: data.updated_at })
-        }
-      })
-  }, [user])
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return
+      const data = JSON.parse(saved)
+      if (data.gender)        setGender(data.gender)
+      if (data.age)           setAge(String(data.age))
+      if (data.height_cm)     setHeight(String(data.height_cm))
+      if (data.weight_kg)     setWeight(String(data.weight_kg))
+      if (data.activity)      setActivity(data.activity)
+      if (data.bmr && data.tdee) {
+        setResult({ bmr: data.bmr, tdee: data.tdee, savedAt: data.savedAt })
+      }
+    } catch (_) {}
+  }, [])
 
-  /* ── Calculate & save ───────────────────────────────────────── */
-  const handleCalc = async () => {
+  /* ── Calculate & save to localStorage ──────────────────────── */
+  const handleCalc = () => {
     const raw = computeBMR({ gender, age, height, weight })
     if (!raw) return
     const act  = ACTIVITIES.find(a => a.value === activity)
     const bmr  = Math.round(raw)
     const tdee = Math.round(raw * act.mult)
     const now  = new Date().toISOString()
-    setSaving(true)
-    await supabase.from('profiles').upsert({
-      id: user.id, gender,
-      age: parseInt(age), height_cm: parseFloat(height),
-      weight_kg: parseFloat(weight), activity_level: activity,
-      bmr, tdee, updated_at: now,
-    })
+
+    const profile = {
+      gender, age: parseFloat(age),
+      height_cm: parseFloat(height), weight_kg: parseFloat(weight),
+      activity, bmr, tdee, savedAt: now,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
     setResult({ bmr, tdee, savedAt: now })
-    setSaving(false)
   }
 
   const canCalc = age && height && weight && +age > 0 && +height > 0 && +weight > 0
@@ -100,15 +93,6 @@ export default function BMR() {
             : 'Calcule quantas calorias seu corpo precisa por dia'}
         </p>
       </div>
-
-      {/* ── DB error ───────────────────────────────────────────── */}
-      {dbErr && (
-        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 14, padding: '14px 18px', marginBottom: 20, fontSize: 13, color: '#f87171' }}>
-          {isEn
-            ? '⚠️ Table "profiles" not found in Supabase. Run the SQL from the instructions to create it.'
-            : '⚠️ Tabela "profiles" não encontrada no Supabase. Execute o SQL das instruções para criá-la.'}
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: result ? '1fr 1fr' : '1fr', gap: 20 }} className="md:grid">
 
@@ -183,21 +167,19 @@ export default function BMR() {
           {/* CTA button */}
           <button
             onClick={handleCalc}
-            disabled={saving || !canCalc}
+            disabled={!canCalc}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               background: canCalc ? primary : 'var(--border-md)',
               color: canCalc ? '#0a0a0a' : 'var(--text-faint)',
               border: 'none', borderRadius: 12, padding: '13px',
               fontSize: 14, fontWeight: 600,
-              cursor: canCalc && !saving ? 'pointer' : 'not-allowed',
+              cursor: canCalc ? 'pointer' : 'not-allowed',
               fontFamily: 'inherit', transition: 'all 0.15s', marginTop: 4,
             }}
           >
-            {saving
-              ? <><Loader2 size={15} className="animate-spin" />{isEn ? 'Saving...' : 'Salvando...'}</>
-              : <><Calculator size={15} />{isEn ? 'Calculate & Save' : 'Calcular e Salvar'}</>
-            }
+            <Calculator size={15} />
+            {isEn ? 'Calculate' : 'Calcular'}
           </button>
 
           {/* Formula note */}
@@ -265,7 +247,7 @@ export default function BMR() {
 
             {/* Saved timestamp */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }}>
-              <Save size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>💾</span>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
                 {isEn ? 'Saved on ' : 'Salvo em '}
                 <strong style={{ color: 'var(--text-dim)' }}>
@@ -280,12 +262,12 @@ export default function BMR() {
         )}
 
         {/* placeholder before first calc */}
-        {!result && !loading && (
+        {!result && (
           <div style={{ background: 'var(--surface)', border: '1px dashed var(--border-md)', borderRadius: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12, color: 'var(--text-muted)' }} className="hidden md:flex">
             <Activity size={40} style={{ opacity: 0.25 }} />
             <p style={{ textAlign: 'center', fontSize: 13, margin: 0 }}>
-              {isEn ? 'Fill in your data and click "Calculate & Save" to see your results here.'
-                    : 'Preencha seus dados e clique em "Calcular e Salvar" para ver seus resultados aqui.'}
+              {isEn ? 'Fill in your data and click "Calculate" to see your results here.'
+                    : 'Preencha seus dados e clique em "Calcular" para ver seus resultados aqui.'}
             </p>
           </div>
         )}
