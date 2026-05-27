@@ -1,22 +1,95 @@
+import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
+import { supabase } from '../../lib/supabase'
 
+/* ── Streak calculation ─────────────────────────────────────────────── */
+/**
+ * Given an array of date strings (YYYY-MM-DD), calculates:
+ *  - current: consecutive days up to today (or yesterday)
+ *  - record:  longest consecutive streak ever
+ */
+function calcStreak(dates) {
+  if (!dates || dates.length === 0) return { current: 0, record: 0 }
+
+  // Deduplicate and sort newest → oldest
+  const sorted = [...new Set(dates)].sort().reverse()
+
+  const today     = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0]
+
+  // ── Current streak (must start from today or yesterday) ──────────
+  let current = 0
+  if (sorted[0] === today || sorted[0] === yesterday) {
+    current = 1
+    for (let i = 1; i < sorted.length; i++) {
+      const diffDays = Math.round(
+        (new Date(sorted[i - 1]) - new Date(sorted[i])) / 864e5
+      )
+      if (diffDays === 1) current++
+      else break
+    }
+  }
+
+  // ── Personal record (max streak in full history) ─────────────────
+  let record = current
+  let run    = 1
+  for (let i = 1; i < sorted.length; i++) {
+    const diffDays = Math.round(
+      (new Date(sorted[i - 1]) - new Date(sorted[i])) / 864e5
+    )
+    if (diffDays === 1) {
+      run++
+    } else {
+      record = Math.max(record, run)
+      run = 1
+    }
+  }
+  record = Math.max(record, run)
+
+  return { current, record }
+}
+
+/* ── Component ──────────────────────────────────────────────────────── */
 export default function Sidebar() {
   const { user, signOut } = useAuth()
   const { primary, language } = useSettings()
   const navigate = useNavigate()
   const t = getT(language)
 
+  const [streak, setStreak] = useState({ current: 0, record: 0 })
+
   const name     = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
   const initials = name.slice(0, 2).toUpperCase()
 
+  // Fetch activity dates from all 3 tables and compute streak
+  useEffect(() => {
+    if (!user) return
+    async function fetchStreak() {
+      const uid = user.id
+      const [r1, r2, r3] = await Promise.all([
+        supabase.from('tasks').select('date').eq('user_id', uid),
+        supabase.from('workouts').select('date').eq('user_id', uid),
+        supabase.from('meals').select('date').eq('user_id', uid),
+      ])
+      const dates = [
+        ...(r1.data ?? []),
+        ...(r2.data ?? []),
+        ...(r3.data ?? []),
+      ].map(r => r.date)
+
+      setStreak(calcStreak(dates))
+    }
+    fetchStreak()
+  }, [user])
+
   const navItems = [
-    { to: '/dashboard',     icon: IconGrid,    label: t('nav.dashboard') },
-    { to: '/treinos',       icon: IconFlame,   label: t('nav.workouts')  },
-    { to: '/dieta',         icon: IconApple,   label: t('nav.nutrition') },
-    { to: '/tarefas',       icon: IconChart,   label: t('nav.tasks')     },
+    { to: '/dashboard', icon: IconGrid,  label: t('nav.dashboard') },
+    { to: '/treinos',   icon: IconFlame, label: t('nav.workouts')  },
+    { to: '/dieta',     icon: IconApple, label: t('nav.nutrition') },
+    { to: '/tarefas',   icon: IconChart, label: t('nav.tasks')     },
   ]
 
   return (
@@ -35,7 +108,7 @@ export default function Sidebar() {
           width: 30, height: 30, borderRadius: 9, background: primary,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#0a0a0a', fontWeight: 700, fontSize: 14,
-          boxShadow: `0 0 0 1px rgba(255,255,255,0.14)`,
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.14)',
         }}>F</div>
         <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text)' }}>
           FitLife<span style={{ color: 'var(--text-faint)' }}>.</span>
@@ -60,11 +133,9 @@ export default function Sidebar() {
               fontSize: 13.5, fontWeight: isActive ? 500 : 450,
               cursor: 'pointer', transition: 'all 0.15s',
             }}>
-              <Icon size={16} active={isActive} color={isActive ? primary : undefined} />
+              <Icon size={16} color={isActive ? primary : undefined} />
               <span style={{ flex: 1 }}>{label}</span>
-              {isActive && (
-                <div style={{ width: 4, height: 4, borderRadius: '50%', background: primary }} />
-              )}
+              {isActive && <div style={{ width: 4, height: 4, borderRadius: '50%', background: primary }} />}
             </div>
           )}
         </NavLink>
@@ -80,14 +151,25 @@ export default function Sidebar() {
         marginBottom: 4,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 4, background: primary, boxShadow: `0 0 10px var(--primary-shadow, ${primary})` }} />
+          <div style={{
+            width: 8, height: 8, borderRadius: 4, background: primary,
+            boxShadow: streak.current > 0 ? `0 0 10px var(--primary-shadow, ${primary})` : 'none',
+          }} />
           <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 500 }}>{t('nav.streak')}</div>
         </div>
+
         <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--text)' }}>
-          12<span style={{ fontSize: 14, color: 'var(--text-muted)', marginLeft: 4, fontWeight: 450 }}>{t('nav.streakDays')}</span>
+          {streak.current}
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', marginLeft: 4, fontWeight: 450 }}>
+            {t('nav.streakDays')}
+          </span>
         </div>
+
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-          {t('nav.record')} 18 {t('nav.streakDays')}
+          {streak.current === 0
+            ? (language === 'en' ? 'Log an activity to start!' : 'Registre algo para começar!')
+            : `${t('nav.record')} ${streak.record} ${t('nav.streakDays')}`
+          }
         </div>
       </div>
 
@@ -111,8 +193,8 @@ export default function Sidebar() {
 
       {/* User + logout */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-        borderRadius: 10, marginTop: 4,
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 10px', borderRadius: 10, marginTop: 4,
       }}>
         <div style={{
           width: 28, height: 28, borderRadius: '50%',
