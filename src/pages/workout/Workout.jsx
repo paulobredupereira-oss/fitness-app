@@ -4,7 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin } from 'lucide-react'
+import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays } from 'lucide-react'
 
 // ── Sports ────────────────────────────────────────────────────────────────────
 const SPORTS = [
@@ -121,6 +121,17 @@ function ExerciseCard({ exercise, onToggle, onDelete, cats, primary, sport }) {
               {cat.label}
             </span>
           )}
+          {exercise.due_date && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: 'rgba(100,180,255,0.9)',
+              background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)',
+              padding: '2px 6px', borderRadius: 6, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 3,
+            }}>
+              <CalendarDays size={10} />
+              {new Date(exercise.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+            </span>
+          )}
         </div>
       </div>
       <button
@@ -152,6 +163,7 @@ export default function Workout() {
   const [sets, setSets]                 = useState('')
   const [reps, setReps]                 = useState('')
   const [duration, setDuration]         = useState('')
+  const [dueDate, setDueDate]           = useState('')
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -183,10 +195,11 @@ export default function Workout() {
       sets:     sets     ? parseInt(sets)     : null,
       reps:     reps     ? parseInt(reps)     : null,
       duration: duration ? parseInt(duration) : null,
+      due_date: dueDate || null,
       done: false, date: today,
     }).select().single()
     if (data) setExercises(prev => [...prev, data])
-    setName(''); setSets(''); setReps(''); setDuration('')
+    setName(''); setSets(''); setReps(''); setDuration(''); setDueDate('')
     setShowForm(false); setAdding(false)
   }
 
@@ -380,6 +393,22 @@ export default function Workout() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Calendar date */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CalendarDays size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                style={{ ...inputStyle, width: 'auto', flex: 1, colorScheme: 'dark' }}
+                onFocus={e => e.target.style.borderColor = primary}
+                onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+              />
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {language === 'en' ? 'Add to calendar (optional)' : 'Agendar no calendário (opcional)'}
+              </span>
             </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
