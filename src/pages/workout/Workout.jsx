@@ -6,6 +6,17 @@ import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays } from 'lucide-react'
 
+// ── Days of week ─────────────────────────────────────────────────────────────
+const DAYS = [
+  { value: 'seg', label_pt: 'Seg', label_en: 'Mon' },
+  { value: 'ter', label_pt: 'Ter', label_en: 'Tue' },
+  { value: 'qua', label_pt: 'Qua', label_en: 'Wed' },
+  { value: 'qui', label_pt: 'Qui', label_en: 'Thu' },
+  { value: 'sex', label_pt: 'Sex', label_en: 'Fri' },
+  { value: 'sab', label_pt: 'Sáb', label_en: 'Sat' },
+  { value: 'dom', label_pt: 'Dom', label_en: 'Sun' },
+]
+
 // ── Sports ────────────────────────────────────────────────────────────────────
 const SPORTS = [
   { value: 'academia',  emoji: '🏋️', label_pt: 'Academia',  label_en: 'Gym'      },
@@ -132,6 +143,22 @@ function ExerciseCard({ exercise, onToggle, onDelete, cats, primary, sport }) {
               {new Date(exercise.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
             </span>
           )}
+          {exercise.repeat_days && (() => {
+            try {
+              const days = JSON.parse(exercise.repeat_days)
+              if (!days.length) return null
+              return (
+                <span style={{
+                  fontSize: 10, fontWeight: 600, color: 'rgba(160,130,255,0.9)',
+                  background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                  padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap',
+                  display: 'flex', alignItems: 'center', gap: 3,
+                }}>
+                  🔁 {days.join(' · ')}
+                </span>
+              )
+            } catch { return null }
+          })()}
         </div>
       </div>
       <button
@@ -164,6 +191,8 @@ export default function Workout() {
   const [reps, setReps]                 = useState('')
   const [duration, setDuration]         = useState('')
   const [dueDate, setDueDate]           = useState('')
+  const [repeatEnabled, setRepeatEnabled] = useState(false)
+  const [repeatDays, setRepeatDays]     = useState([])
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -196,10 +225,12 @@ export default function Workout() {
       reps:     reps     ? parseInt(reps)     : null,
       duration: duration ? parseInt(duration) : null,
       due_date: dueDate || null,
+      repeat_days: repeatEnabled && repeatDays.length > 0 ? JSON.stringify(repeatDays) : null,
       done: false, date: today,
     }).select().single()
     if (data) setExercises(prev => [...prev, data])
     setName(''); setSets(''); setReps(''); setDuration(''); setDueDate('')
+    setRepeatEnabled(false); setRepeatDays([])
     setShowForm(false); setAdding(false)
   }
 
@@ -409,6 +440,81 @@ export default function Workout() {
               <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                 {language === 'en' ? 'Add to calendar (optional)' : 'Agendar no calendário (opcional)'}
               </span>
+            </div>
+
+            {/* Repeat weekly */}
+            <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-md)', borderRadius: 12, padding: 12 }}>
+              <button
+                type="button"
+                onClick={() => { setRepeatEnabled(!repeatEnabled); if (repeatEnabled) setRepeatDays([]) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  color: repeatEnabled ? primary : 'var(--text-dim)', fontFamily: 'inherit',
+                }}
+              >
+                <span style={{
+                  width: 36, height: 20, borderRadius: 10, flexShrink: 0,
+                  background: repeatEnabled ? primary : 'var(--border-md)',
+                  position: 'relative', transition: 'background 0.2s',
+                }}>
+                  <span style={{
+                    position: 'absolute', top: 2, left: repeatEnabled ? 18 : 2,
+                    width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                    transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  }} />
+                </span>
+                <span style={{ fontSize: 13, fontWeight: repeatEnabled ? 600 : 400 }}>
+                  🔁 {language === 'en' ? 'Repeat weekly' : 'Repetir semanalmente'}
+                </span>
+              </button>
+
+              {repeatEnabled && (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                    {language === 'en' ? 'Training days · Rest days = unselected' : 'Dias de treino · Dias de folga = não selecionados'}
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+                    {DAYS.map(day => {
+                      const active = repeatDays.includes(day.value)
+                      const label  = language === 'en' ? day.label_en : day.label_pt
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => setRepeatDays(prev =>
+                            active ? prev.filter(d => d !== day.value) : [...prev, day.value]
+                          )}
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                            padding: '8px 4px', borderRadius: 10, border: 'none',
+                            background: active ? `color-mix(in srgb, var(--primary) 15%, transparent)` : 'var(--surface-2)',
+                            cursor: 'pointer', fontFamily: 'inherit',
+                            outline: active ? `2px solid color-mix(in srgb, var(--primary) 50%, transparent)` : 'none',
+                            outlineOffset: -1,
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <span style={{ fontSize: 9, fontWeight: 600, color: active ? primary : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {label}
+                          </span>
+                          <span style={{ fontSize: 14 }}>{active ? '💪' : '😴'}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {repeatDays.length > 0 && (() => {
+                    const restDays = DAYS.filter(d => !repeatDays.includes(d.value))
+                    const restLabels = restDays.map(d => language === 'en' ? d.label_en : d.label_pt)
+                    return (
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+                        💪 {repeatDays.join(' · ')}
+                        {restLabels.length > 0 && <> &nbsp;·&nbsp; 😴 {restLabels.join(' · ')}</>}
+                      </p>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
