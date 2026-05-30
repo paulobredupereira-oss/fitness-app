@@ -23,9 +23,9 @@ function MealCard({ meal, onToggle, onDelete, primary }) {
       <button onClick={() => onToggle(meal)} className="mt-0.5 flex-shrink-0">
         {meal.done
           ? <CheckCircle2 size={20} style={{ color: primary, fill: `${primary}33` }} />
-          : <Circle size={20} style={{ color: 'rgba(255,255,255,0.2)', transition: 'color 0.15s' }}
+          : <Circle size={20} style={{ color: 'var(--text-faint)', transition: 'color 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.color = primary}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'} />
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />
         }
       </button>
       <div className="flex-1 min-w-0">

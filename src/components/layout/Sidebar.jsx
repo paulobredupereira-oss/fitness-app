@@ -131,7 +131,7 @@ export default function Sidebar() {
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '9px 10px', borderRadius: 10,
-              background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: isActive ? 'var(--nav-active-bg)' : 'transparent',
               color: isActive ? 'var(--text)' : 'var(--text-dim)',
               fontSize: 13.5, fontWeight: isActive ? 500 : 450,
               cursor: 'pointer', transition: 'all 0.15s',
@@ -182,7 +182,7 @@ export default function Sidebar() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '9px 10px', borderRadius: 10,
-            background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+            background: isActive ? 'var(--nav-active-bg)' : 'transparent',
             color: isActive ? 'var(--text)' : 'var(--text-dim)',
             fontSize: 13.5, fontWeight: isActive ? 500 : 450,
             cursor: 'pointer', transition: 'all 0.15s',

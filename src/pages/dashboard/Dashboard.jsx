@@ -6,17 +6,17 @@ import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
-const P = 'var(--primary)'   // resolves to current accent color via CSS variable
-const ON_P = '#0a0a0a'
-const BG = '#0a0a0a'
-const SURFACE = '#141414'
-const SURFACE2 = '#1c1c1c'
-const BORDER = 'rgba(255,255,255,0.08)'
-const BORDER2 = 'rgba(255,255,255,0.14)'
-const TEXT = '#fafafa'
-const MUTED = 'rgba(250,250,250,0.55)'
-const MUTED2 = 'rgba(250,250,250,0.32)'
-const RADIUS = 18
+const P       = 'var(--primary)'
+const ON_P    = '#0a0a0a'
+const BG      = 'var(--bg)'
+const SURFACE = 'var(--surface)'
+const SURFACE2 = 'var(--surface-alt)'
+const BORDER  = 'var(--border)'
+const BORDER2 = 'var(--border-md)'
+const TEXT    = 'var(--text)'
+const MUTED   = 'var(--text-dim)'
+const MUTED2  = 'var(--text-muted)'
+const RADIUS  = 18
 
 // ── SVG icons ────────────────────────────────────────────────────────────────
 const Icon = ({ name, size = 16, color = 'currentColor' }) => {
@@ -82,8 +82,8 @@ const BarChart = ({ data }) => {
               )}
               <div style={{
                 width: '70%', maxWidth: 36, height: Math.max(has ? h : 4, 4), borderRadius: 6,
-                background: has ? (isToday ? P : 'rgba(255,255,255,0.14)') : 'transparent',
-                border: !has ? `1.5px dashed ${MUTED2}` : 'none',
+                background: has ? (isToday ? P : 'var(--border-md)') : 'transparent',
+                border: !has ? '1.5px dashed var(--text-faint)' : 'none',
                 marginTop: isToday && v > 0 ? 18 : 0,
               }} />
             </div>
@@ -126,39 +126,32 @@ const Rings = ({ pct = 71 }) => {
 }
 
 // ── Card wrapper ─────────────────────────────────────────────────────────────
-const Card = ({ title, subtitle, action, children, compact, inverted }) => {
-  const bg = inverted ? TEXT : SURFACE
-  const tx = inverted ? BG : TEXT
-  const mt = inverted ? MUTED2.replace('250,250,250', '10,10,10') : MUTED
-  const mt2 = inverted ? 'rgba(10,10,10,0.32)' : MUTED2
-  const bd = inverted ? 'transparent' : BORDER
-  return (
-    <div style={{
-      background: bg, borderRadius: RADIUS,
-      border: `1px solid ${bd}`,
-      padding: compact ? 18 : 24,
-      color: tx,
-    }}>
-      {(title || action) && (
-        <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: compact ? 12 : 18 }}>
-          <div>
-            {title && <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</div>}
-            {subtitle && <div style={{ fontSize: 11.5, color: mt2, marginTop: 3 }}>{subtitle}</div>}
-          </div>
-          {action}
+const Card = ({ title, subtitle, action, children, compact }) => (
+  <div style={{
+    background: 'var(--surface)', borderRadius: RADIUS,
+    border: '1px solid var(--border)',
+    padding: compact ? 18 : 24,
+    color: 'var(--text)',
+  }}>
+    {(title || action) && (
+      <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: compact ? 12 : 18 }}>
+        <div>
+          {title && <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</div>}
+          {subtitle && <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>{subtitle}</div>}
         </div>
-      )}
-      {children}
-    </div>
-  )
-}
+        {action}
+      </div>
+    )}
+    {children}
+  </div>
+)
 
 // ── Mobile bottom tab bar ────────────────────────────────────────────────────
 const MobileTabBar = () => (
   <div style={{
     position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
     padding: '8px 16px 28px',
-    background: 'linear-gradient(to top, rgba(10,10,10,0.97) 60%, rgba(10,10,10,0))',
+    background: 'linear-gradient(to top, var(--bg) 60%, transparent)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
   }}>
@@ -304,9 +297,9 @@ export default function Dashboard() {
         <div style={{ padding: '0 20px' }}>
           <div style={{ borderRadius: 22, background: TEXT, color: BG, padding: 20, position: 'relative', overflow: 'hidden' }}>
             <svg viewBox="0 0 350 200" style={{ position: 'absolute', inset: 0, opacity: 0.07 }} preserveAspectRatio="none">
-              <circle cx="320" cy="40" r="90" fill="none" stroke={BG} strokeWidth="1" />
-              <circle cx="320" cy="40" r="60" fill="none" stroke={BG} strokeWidth="1" />
-              <circle cx="320" cy="40" r="32" fill={BG} />
+              <circle cx="320" cy="40" r="90" fill="none" stroke="currentColor" strokeWidth="1" />
+              <circle cx="320" cy="40" r="60" fill="none" stroke="currentColor" strokeWidth="1" />
+              <circle cx="320" cy="40" r="32" fill="currentColor" />
             </svg>
             <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 25%, transparent), transparent 65%)' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -400,7 +393,7 @@ export default function Dashboard() {
           <div style={{ fontSize: 11.5, color: MUTED, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {dateLabel}
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, margin: '6px 0 6px', letterSpacing: '-0.035em', lineHeight: 1.05, color: TEXT }}>
+          <h1 style={{ fontSize: 36, fontWeight: 600, margin: '6px 0 6px', letterSpacing: '-0.035em', lineHeight: 1.05, color: 'var(--text)' }}>
             {getGreeting()}, {name.split(' ')[0]}.
           </h1>
           <div style={{ fontSize: 14, color: MUTED, maxWidth: 480 }}>
@@ -413,7 +406,7 @@ export default function Dashboard() {
           display: 'flex', alignItems: 'center', gap: 8,
           background: P, color: ON_P, borderRadius: 12, padding: '12px 20px',
           fontSize: 13.5, fontWeight: 600, textDecoration: 'none',
-          boxShadow: '0 1px 0 rgba(255,255,255,0.3) inset, 0 6px 20px color-mix(in srgb, var(--primary) 25%, transparent)',
+          boxShadow: '0 6px 20px color-mix(in srgb, var(--primary) 25%, transparent)',
           flexShrink: 0,
         }}>
           <Icon name="play" size={14} color={ON_P} />
@@ -521,8 +514,8 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* Overall progress — inverted card */}
-          <Card title="Progresso de Hoje" subtitle={`${totalDone} de ${totalItems} itens concluídos`} inverted>
+          {/* Overall progress */}
+          <Card title="Progresso de Hoje" subtitle={`${totalDone} de ${totalItems} itens concluídos`}>
             <div style={{ display: 'flex', gap: 5, marginTop: 4, marginBottom: 16 }}>
               {['Tarefas', 'Dieta', 'Treinos'].map((label, i) => {
                 const vals = [
@@ -533,19 +526,19 @@ export default function Dashboard() {
                 const pct = vals[i]
                 return (
                   <div key={label} style={{ flex: 1, textAlign: 'center' }}>
-                    <div style={{ height: 48, borderRadius: 8, background: pct > 0 ? P : 'rgba(10,10,10,0.1)', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: pct > 0 ? ON_P : 'rgba(10,10,10,0.3)' }}>{pct}%</span>
+                    <div style={{ height: 48, borderRadius: 8, background: pct > 0 ? P : 'var(--border)', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: pct > 0 ? '#fff' : 'var(--text-muted)' }}>{pct}%</span>
                     </div>
-                    <span style={{ fontSize: 10.5, color: 'rgba(10,10,10,0.55)', fontWeight: 500 }}>{label}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 500 }}>{label}</span>
                   </div>
                 )
               })}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: 12, color: 'rgba(10,10,10,0.55)' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 {overallPct === 100 ? '🏆 Dia perfeito!' : overallPct > 50 ? '🔥 Mais da metade!' : 'Continue assim!'}
               </p>
-              <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.04em', color: BG }}>{overallPct}%</span>
+              <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.04em', color: 'var(--text)' }}>{overallPct}%</span>
             </div>
           </Card>
 

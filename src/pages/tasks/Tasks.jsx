@@ -29,9 +29,9 @@ function TaskItem({ task, onToggle, onDelete, priorities, primary }) {
       <button onClick={() => onToggle(task)} className="flex-shrink-0 transition">
         {task.done
           ? <CheckCircle2 size={22} style={{ color: primary, fill: `${primary}33` }} />
-          : <Circle size={22} style={{ color: 'rgba(255,255,255,0.2)', transition: 'color 0.15s' }}
+          : <Circle size={22} style={{ color: 'var(--text-faint)', transition: 'color 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.color = primary}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'} />
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />
         }
       </button>
       <div className="flex-1 min-w-0">
