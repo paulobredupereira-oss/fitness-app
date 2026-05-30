@@ -1,7 +1,7 @@
 import { useSettings, ACCENTS } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import Layout from '../../components/layout/Layout'
-import { Settings as SettingsIcon, Check, Moon, Sun, Palette, Globe } from 'lucide-react'
+import { Settings as SettingsIcon, Check, Moon, Sun, Palette, Globe, HeadphonesIcon, MessageCircle } from 'lucide-react'
 
 /* ── Theme preview mini-card ─────────────────────────────────────────── */
 function ThemePreview({ isDark }) {
@@ -230,6 +230,34 @@ export default function Settings() {
             primary={primary}
           />
         </div>
+      </Section>
+
+      {/* ── Suporte / Support ──────────────────────────────────── */}
+      <Section icon={HeadphonesIcon} title={language === 'en' ? 'Support' : 'Suporte'}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, marginTop: -8 }}>
+          {language === 'en'
+            ? 'Having trouble? Contact us via WhatsApp.'
+            : 'Teve algum problema? Entre em contato pelo WhatsApp.'}
+        </p>
+        <a
+          href="https://wa.me/5513996630625"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: `color-mix(in srgb, var(--primary) 12%, transparent)`,
+            border: `1.5px solid color-mix(in srgb, var(--primary) 40%, transparent)`,
+            borderRadius: 14, padding: '12px 20px',
+            color: primary, fontWeight: 600, fontSize: 14,
+            textDecoration: 'none', fontFamily: 'inherit',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = `color-mix(in srgb, var(--primary) 20%, transparent)` }}
+          onMouseLeave={e => { e.currentTarget.style.background = `color-mix(in srgb, var(--primary) 12%, transparent)` }}
+        >
+          <MessageCircle size={18} />
+          (13) 99663-0625
+        </a>
       </Section>
     </Layout>
   )
