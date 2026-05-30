@@ -98,10 +98,14 @@ html[data-theme="light"] .border-slate-700 { border-color: #cbd5e1 !important; }
 html[data-theme="light"] .text-slate-400  { color: #64748b !important; }
 
 /* ── Dynamic primary color — override hardcoded #ff4d2e classes ─────── */
-.bg-\[\#ff4d2e\]              { background-color: var(--primary) !important; }
-.text-\[\#ff4d2e\]            { color: var(--primary) !important; }
-.border-\[\#ff4d2e\]          { border-color: var(--primary) !important; }
-.hover\:bg-\[\#e03d1e\]:hover { background-color: var(--primary-dark) !important; }
+.bg-\[\#ff4d2e\]                   { background-color: var(--primary) !important; }
+.text-\[\#ff4d2e\]                 { color: var(--primary) !important; }
+.border-\[\#ff4d2e\]               { border-color: var(--primary) !important; }
+.hover\:bg-\[\#e03d1e\]:hover      { background-color: var(--primary-dark) !important; }
+/* hover/focus variants */
+.hover\:text-\[\#ff4d2e\]:hover    { color: var(--primary) !important; }
+.focus\:ring-\[\#ff4d2e\]\/50:focus { --tw-ring-color: color-mix(in srgb, var(--primary) 50%, transparent) !important; }
+.hover\:border-\[\#ff4d2e\]\/50:hover { border-color: color-mix(in srgb, var(--primary) 50%, transparent) !important; }
 
 /* ── Smooth theme transition ────────────────────────────────────────── */
 div, span, aside, main, header, section, nav, button, input, select, textarea, a, p, h1, h2, h3, h4 {

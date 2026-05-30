@@ -46,7 +46,9 @@ function ExerciseCard({ exercise, onToggle, onDelete, cats, primary }) {
       <button onClick={() => onToggle(exercise)} style={{ marginTop: 2, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'inherit' }}>
         {exercise.done
           ? <CheckCircle2 size={20} style={{ color: primary, fill: `${primary}33` }} />
-          : <Circle size={20} style={{ color: 'var(--text-faint)' }} className="hover:text-[#ff4d2e] transition" />
+          : <Circle size={20} style={{ color: 'var(--text-faint)', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = primary}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />
         }
       </button>
       <div style={{ flex: 1, minWidth: 0 }}>

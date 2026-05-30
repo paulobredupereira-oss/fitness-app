@@ -14,7 +14,7 @@ function getPriorities(t) {
   ]
 }
 
-function TaskItem({ task, onToggle, onDelete, priorities }) {
+function TaskItem({ task, onToggle, onDelete, priorities, primary }) {
   const [deleting, setDeleting] = useState(false)
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
@@ -28,8 +28,10 @@ function TaskItem({ task, onToggle, onDelete, priorities }) {
     >
       <button onClick={() => onToggle(task)} className="flex-shrink-0 transition">
         {task.done
-          ? <CheckCircle2 size={22} className="text-[#ff4d2e]" style={{ fill: 'rgba(255,77,46,0.2)' }} />
-          : <Circle size={22} className="text-white/20 hover:text-[#ff4d2e] transition" />
+          ? <CheckCircle2 size={22} style={{ color: primary, fill: `${primary}33` }} />
+          : <Circle size={22} style={{ color: 'rgba(255,255,255,0.2)', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = primary}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'} />
         }
       </button>
       <div className="flex-1 min-w-0">
@@ -236,7 +238,7 @@ export default function Tasks() {
       {/* Task list */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 size={28} className="animate-spin text-[#ff4d2e]" />
+          <Loader2 size={28} className="animate-spin" style={{ color: primary }} />
         </div>
       ) : tasks.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-muted)' }}>
@@ -253,7 +255,7 @@ export default function Tasks() {
               </h3>
               <div className="space-y-2">
                 {pending.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} />
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} primary={primary} />
                 ))}
               </div>
             </div>
@@ -265,7 +267,7 @@ export default function Tasks() {
               </h3>
               <div className="space-y-2">
                 {completed.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} />
+                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} primary={primary} />
                 ))}
               </div>
             </div>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 
 // ── Design tokens ────────────────────────────────────────────────────────────
-const P = '#ff4d2e'          // primary (red/orange)
+const P = 'var(--primary)'   // resolves to current accent color via CSS variable
 const ON_P = '#0a0a0a'
 const BG = '#0a0a0a'
 const SURFACE = '#141414'
@@ -97,9 +98,9 @@ const BarChart = ({ data }) => {
 // ── Nutrition Rings ──────────────────────────────────────────────────────────
 const Rings = ({ pct = 71 }) => {
   const rings = [
-    { r: 38, pct: pct / 100, color: P },
-    { r: 28, pct: pct / 100 * 0.77, color: `${P}aa` },
-    { r: 18, pct: pct / 100 * 0.56, color: `${P}55` },
+    { r: 38, pct: pct / 100, color: 'var(--primary)' },
+    { r: 28, pct: pct / 100 * 0.77, color: 'color-mix(in srgb, var(--primary) 67%, transparent)' },
+    { r: 18, pct: pct / 100 * 0.56, color: 'color-mix(in srgb, var(--primary) 33%, transparent)' },
   ]
   return (
     <div style={{ width: 96, height: 96, position: 'relative', flexShrink: 0 }}>
@@ -180,7 +181,7 @@ const MobileTabBar = () => (
               width: 44, height: 44, borderRadius: 14,
               background: P, color: ON_P,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 4px 14px ${P}55`,
+              boxShadow: '0 4px 14px color-mix(in srgb, var(--primary) 33%, transparent)',
             }}>
               <Icon name="play" size={18} color={ON_P} />
             </div>
@@ -307,7 +308,7 @@ export default function Dashboard() {
               <circle cx="320" cy="40" r="60" fill="none" stroke={BG} strokeWidth="1" />
               <circle cx="320" cy="40" r="32" fill={BG} />
             </svg>
-            <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: `radial-gradient(circle at center, ${P}40, transparent 65%)` }} />
+            <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 25%, transparent), transparent 65%)' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{ width: 6, height: 6, borderRadius: 3, background: P }} />
@@ -412,7 +413,7 @@ export default function Dashboard() {
           display: 'flex', alignItems: 'center', gap: 8,
           background: P, color: ON_P, borderRadius: 12, padding: '12px 20px',
           fontSize: 13.5, fontWeight: 600, textDecoration: 'none',
-          boxShadow: `0 1px 0 rgba(255,255,255,0.3) inset, 0 6px 20px ${P}40`,
+          boxShadow: '0 1px 0 rgba(255,255,255,0.3) inset, 0 6px 20px color-mix(in srgb, var(--primary) 25%, transparent)',
           flexShrink: 0,
         }}>
           <Icon name="play" size={14} color={ON_P} />
@@ -446,7 +447,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
                 <div style={{
                   width: 168, flexShrink: 0, borderRadius: 14,
-                  background: `linear-gradient(135deg, ${P}, ${P}aa)`,
+                  background: 'linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 67%, transparent))',
                   position: 'relative', overflow: 'hidden',
                   display: 'flex', alignItems: 'end', padding: 14, color: ON_P,
                 }}>
@@ -509,7 +510,7 @@ export default function Dashboard() {
                       <span style={{ color: TEXT, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{m.pct}%</span>
                     </div>
                     <div style={{ height: 5, borderRadius: 3, background: SURFACE2, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${m.pct}%`, background: i === 0 ? P : i === 1 ? `${P}90` : `${P}55`, borderRadius: 3, transition: 'width 0.5s' }} />
+                      <div style={{ height: '100%', width: `${m.pct}%`, background: i === 0 ? 'var(--primary)' : i === 1 ? 'color-mix(in srgb, var(--primary) 56%, transparent)' : 'color-mix(in srgb, var(--primary) 33%, transparent)', borderRadius: 3, transition: 'width 0.5s' }} />
                     </div>
                   </div>
                 ))}

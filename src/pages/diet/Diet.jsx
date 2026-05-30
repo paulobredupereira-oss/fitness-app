@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { UtensilsCrossed, Plus, Trash2, CheckCircle2, Circle, Loader2, Flame, Camera, X, ImageOff } from 'lucide-react'
 
-const P = '#ff4d2e'
+const P = 'var(--primary)'
 
 const mealTypes = [
   { value: 'cafe', label: '☀️ Café da manhã', color: 'bg-yellow-900/40 border-yellow-700/50 text-yellow-400' },
@@ -15,14 +16,16 @@ const mealTypes = [
   { value: 'ceia', label: '🌛 Ceia', color: 'bg-purple-900/40 border-purple-700/50 text-purple-400' },
 ]
 
-function MealCard({ meal, onToggle, onDelete }) {
+function MealCard({ meal, onToggle, onDelete, primary }) {
   const type = mealTypes.find(m => m.value === meal.meal_type) || mealTypes[0]
   return (
     <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${meal.done ? 'opacity-50 border-white/5 bg-white/[0.02]' : 'bg-[#141414] border-white/10 hover:border-white/20'}`}>
       <button onClick={() => onToggle(meal)} className="mt-0.5 flex-shrink-0">
         {meal.done
-          ? <CheckCircle2 size={20} style={{ color: P, fill: 'rgba(255,77,46,0.2)' }} />
-          : <Circle size={20} className="text-white/20 hover:text-[#ff4d2e] transition" />
+          ? <CheckCircle2 size={20} style={{ color: primary, fill: `${primary}33` }} />
+          : <Circle size={20} style={{ color: 'rgba(255,255,255,0.2)', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = primary}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'} />
         }
       </button>
       <div className="flex-1 min-w-0">
@@ -171,6 +174,7 @@ function PhotoAlbum({ userId, today }) {
 
 export default function Diet() {
   const { user } = useAuth()
+  const { primary } = useSettings()
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -308,7 +312,7 @@ export default function Diet() {
             <div key={group.value}>
               <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">{group.label}</h3>
               <div className="space-y-2">
-                {group.items.map(m => <MealCard key={m.id} meal={m} onToggle={toggleMeal} onDelete={deleteMeal} />)}
+                {group.items.map(m => <MealCard key={m.id} meal={m} onToggle={toggleMeal} onDelete={deleteMeal} primary={primary} />)}
               </div>
             </div>
           ))}
