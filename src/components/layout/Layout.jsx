@@ -6,12 +6,12 @@ import { useSettings } from '../../contexts/SettingsContext'
 
 /* ── Short labels for mobile radial menu ─────────────────────────── */
 const SHORT = {
-  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', calendar: 'Agenda', bmr: 'TMB', settings: 'Config' },
-  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',   calendar: 'Calendar', bmr: 'BMR', settings: 'Settings' },
+  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', calendar: 'Agenda', bmr: 'TMB', settings: 'Config', profile: 'Perfil' },
+  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',   calendar: 'Calendar', bmr: 'BMR', settings: 'Settings', profile: 'Profile' },
 }
 
 /* ── Radial menu geometry ────────────────────────────────────────── */
-const R = 125   // radius in px (increased for 7 items)
+const R = 138   // radius in px (for 8 items)
 
 /** Returns (x, y) pixel offset from center for a given angle in degrees */
 function polar(deg) {
@@ -22,9 +22,9 @@ function polar(deg) {
   }
 }
 
-// 7 slots spread from 0° (right/3-o'clock) to 180° (left/9-o'clock) — 30° each
+// 8 slots spread from 0° (right) to 180° (left) — 180/7 ≈ 25.7° each
 // Animation stagger goes 0° → 180°, which is clockwise on screen
-const ANGLES = [0, 30, 60, 90, 120, 150, 180]
+const ANGLES = [0, 26, 51, 77, 103, 129, 154, 180]
 
 /* ── Mobile Radial Nav ───────────────────────────────────────────── */
 function MobileNav() {
@@ -42,6 +42,7 @@ function MobileNav() {
     { to: '/calendario',    label: labels.calendar,  Icon: IcCalendar },
     { to: '/calculadora',   label: labels.bmr,       Icon: IcCalc     },
     { to: '/configuracoes', label: labels.settings,  Icon: IcGear     },
+    { to: '/perfil',        label: labels.profile,   Icon: IcUser     },
   ]
 
   const handleNav = (to) => {
@@ -219,6 +220,15 @@ function IcPlay({ size = 24, style }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={style}>
       {/* Slightly inset play triangle for optical balance */}
       <polygon points="7,4 20,12 7,20" />
+    </svg>
+  )
+}
+function IcUser({ size = 22, style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
     </svg>
   )
 }

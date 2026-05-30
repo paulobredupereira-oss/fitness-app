@@ -92,6 +92,7 @@ export default function Sidebar() {
     { to: '/tarefas',     icon: IconChart,    label: t('nav.tasks')     },
     { to: '/calendario',  icon: IconCalendar, label: t('nav.calendar')  },
     { to: '/calculadora', icon: IconCalc,     label: t('nav.bmr')       },
+    { to: '/perfil',      icon: IconUser,     label: t('nav.profile')   },
   ]
 
   return (
@@ -264,6 +265,15 @@ function IconChart({ size = 16, color }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 20h18"/><path d="M6 16v-4"/><path d="M11 16V8"/><path d="M16 16v-6"/>
+    </svg>
+  )
+}
+function IconUser({ size = 16, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke={color || 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
     </svg>
   )
 }
