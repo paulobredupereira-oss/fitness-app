@@ -193,6 +193,7 @@ export default function Workout() {
   const [dueDate, setDueDate]           = useState('')
   const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [repeatDays, setRepeatDays]     = useState([])
+  const [formError, setFormError]       = useState('')
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -216,18 +217,42 @@ export default function Workout() {
     e.preventDefault()
     if (!name.trim()) return
     setAdding(true)
-    const { data } = await supabase.from('workouts').insert({
+    setFormError('')
+
+    const payload = {
       user_id: user.id,
       name: name.trim(),
       category: selectedSport === 'academia' ? category : selectedSport,
-      sport: selectedSport,
+      done: false,
+      date: today,
       sets:     sets     ? parseInt(sets)     : null,
       reps:     reps     ? parseInt(reps)     : null,
       duration: duration ? parseInt(duration) : null,
+    }
+
+    // Try inserting with new columns first; fall back without them if they don't exist
+    let data = null
+    let error = null
+
+    const fullPayload = {
+      ...payload,
+      sport: selectedSport,
       due_date: dueDate || null,
       repeat_days: repeatEnabled && repeatDays.length > 0 ? JSON.stringify(repeatDays) : null,
-      done: false, date: today,
-    }).select().single()
+    }
+    ;({ data, error } = await supabase.from('workouts').insert(fullPayload).select().single())
+
+    if (error) {
+      // Columns likely missing — try without new columns
+      ;({ data, error } = await supabase.from('workouts').insert(payload).select().single())
+      if (error) {
+        setFormError(`Erro: ${error.message}`)
+        setAdding(false)
+        return
+      }
+      setFormError('⚠️ Execute o SQL de migração no Supabase para salvar esporte, data e repetição.')
+    }
+
     if (data) setExercises(prev => [...prev, data])
     setName(''); setSets(''); setReps(''); setDuration(''); setDueDate('')
     setRepeatEnabled(false); setRepeatDays([])
@@ -516,6 +541,12 @@ export default function Workout() {
                 </div>
               )}
             </div>
+
+            {formError && (
+              <div style={{ fontSize: 12, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '8px 12px' }}>
+                {formError}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button type="button" onClick={() => setShowForm(false)}
