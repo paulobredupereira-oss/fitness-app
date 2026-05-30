@@ -6,12 +6,12 @@ import { useSettings } from '../../contexts/SettingsContext'
 
 /* ── Short labels for mobile radial menu ─────────────────────────── */
 const SHORT = {
-  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', bmr: 'TMB', settings: 'Config' },
-  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',   bmr: 'BMR', settings: 'Settings' },
+  pt: { dashboard: 'Início', workouts: 'Treino', nutrition: 'Dieta', tasks: 'Tarefas', calendar: 'Agenda', bmr: 'TMB', settings: 'Config' },
+  en: { dashboard: 'Home',   workouts: 'Workout', nutrition: 'Diet', tasks: 'Tasks',   calendar: 'Calendar', bmr: 'BMR', settings: 'Settings' },
 }
 
 /* ── Radial menu geometry ────────────────────────────────────────── */
-const R = 112   // radius in px
+const R = 125   // radius in px (increased for 7 items)
 
 /** Returns (x, y) pixel offset from center for a given angle in degrees */
 function polar(deg) {
@@ -22,9 +22,9 @@ function polar(deg) {
   }
 }
 
-// 6 slots spread from 0° (right/3-o'clock) to 180° (left/9-o'clock)
+// 7 slots spread from 0° (right/3-o'clock) to 180° (left/9-o'clock) — 30° each
 // Animation stagger goes 0° → 180°, which is clockwise on screen
-const ANGLES = [0, 36, 72, 108, 144, 180]
+const ANGLES = [0, 30, 60, 90, 120, 150, 180]
 
 /* ── Mobile Radial Nav ───────────────────────────────────────────── */
 function MobileNav() {
@@ -35,12 +35,13 @@ function MobileNav() {
   const labels = SHORT[language] || SHORT.pt
 
   const items = [
-    { to: '/dashboard',     label: labels.dashboard, Icon: IcHome    },
-    { to: '/treinos',       label: labels.workouts,  Icon: IcFlame   },
-    { to: '/dieta',         label: labels.nutrition, Icon: IcApple   },
-    { to: '/tarefas',       label: labels.tasks,     Icon: IcCheck   },
-    { to: '/calculadora',   label: labels.bmr,       Icon: IcCalc    },
-    { to: '/configuracoes', label: labels.settings,  Icon: IcGear    },
+    { to: '/dashboard',     label: labels.dashboard, Icon: IcHome     },
+    { to: '/treinos',       label: labels.workouts,  Icon: IcFlame    },
+    { to: '/dieta',         label: labels.nutrition, Icon: IcApple    },
+    { to: '/tarefas',       label: labels.tasks,     Icon: IcCheck    },
+    { to: '/calendario',    label: labels.calendar,  Icon: IcCalendar },
+    { to: '/calculadora',   label: labels.bmr,       Icon: IcCalc     },
+    { to: '/configuracoes', label: labels.settings,  Icon: IcGear     },
   ]
 
   const handleNav = (to) => {
@@ -218,6 +219,17 @@ function IcPlay({ size = 24, style }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={style}>
       {/* Slightly inset play triangle for optical balance */}
       <polygon points="7,4 20,12 7,20" />
+    </svg>
+  )
+}
+function IcCalendar({ size = 22, style }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
     </svg>
   )
 }

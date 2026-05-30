@@ -10,6 +10,7 @@ import Diet from './pages/diet/Diet'
 import Workout from './pages/workout/Workout'
 import Settings from './pages/settings/Settings'
 import BMR from './pages/bmr/BMR'
+import Calendar from './pages/calendar/Calendar'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/treinos"     element={<PrivateRoute><Workout /></PrivateRoute>} />
             <Route path="/configuracoes" element={<PrivateRoute><Settings /></PrivateRoute>} />
             <Route path="/calculadora"  element={<PrivateRoute><BMR /></PrivateRoute>} />
+            <Route path="/calendario"   element={<PrivateRoute><Calendar /></PrivateRoute>} />
           </Routes>
         </AuthProvider>
       </SettingsProvider>

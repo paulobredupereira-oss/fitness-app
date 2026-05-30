@@ -4,7 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2 } from 'lucide-react'
+import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2, CalendarDays } from 'lucide-react'
 
 function getPriorities(t) {
   return [
@@ -40,6 +40,17 @@ function TaskItem({ task, onToggle, onDelete, priorities }) {
           <p className="text-xs text-white/30 mt-0.5 truncate">{task.description}</p>
         )}
       </div>
+      {task.due_date && (
+        <span style={{
+          fontSize: 10, fontWeight: 600, color: 'rgba(100,180,255,0.9)',
+          background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)',
+          padding: '2px 6px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap',
+          display: 'flex', alignItems: 'center', gap: 3,
+        }}>
+          <CalendarDays size={10} />
+          {new Date(task.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+        </span>
+      )}
       <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${p.color} flex-shrink-0`}>
         {p.label}
       </span>
@@ -65,6 +76,7 @@ export default function Tasks() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('media')
+  const [dueDate, setDueDate] = useState('')
   const [adding, setAdding] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
@@ -88,9 +100,10 @@ export default function Tasks() {
     const { data } = await supabase.from('tasks').insert({
       user_id: user.id, title: title.trim(),
       description: description.trim(), priority, done: false, date: today,
+      due_date: dueDate || null,
     }).select().single()
     if (data) setTasks(prev => [...prev, data])
-    setTitle(''); setDescription(''); setPriority('media')
+    setTitle(''); setDescription(''); setPriority('media'); setDueDate('')
     setShowForm(false); setAdding(false)
   }
 
@@ -189,6 +202,21 @@ export default function Tasks() {
                   <Flag size={12} />{p.label}
                 </button>
               ))}
+            </div>
+            {/* Optional calendar date */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CalendarDays size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                style={{ ...inputStyle, width: 'auto', flex: 1, colorScheme: 'dark' }}
+                onFocus={e => e.target.style.borderColor = primary}
+                onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+              />
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {language === 'en' ? 'Add to calendar (optional)' : 'Agendar no calendário (opcional)'}
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button type="button" onClick={() => setShowForm(false)}
