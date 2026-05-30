@@ -1,87 +1,184 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader2, Bot, User, Dumbbell } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Bot, Zap, Dumbbell, CheckSquare } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useSettings } from '../../contexts/SettingsContext'
+import { supabase } from '../../lib/supabase'
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 
-const SYSTEM_PROMPT = `Você é o FitAI, um assistente pessoal especializado em fitness, musculação, nutrição e saúde.
-Você é como um personal trainer e nutricionista brasileiro amigável e motivador.
-Responda sempre em português brasileiro de forma clara, objetiva e prática.
-Foque em responder dúvidas sobre:
-- Treinos e exercícios (técnica, séries, repetições, grupos musculares)
-- Dieta e nutrição (alimentos, calorias, macros, timing de refeições)
-- Suplementação (whey, creatina, etc.)
-- Recuperação muscular e descanso
-- Motivação e hábitos saudáveis
-Seja direto e dê dicas práticas. Limite respostas a no máximo 3-4 parágrafos curtos.
-Se a pergunta não for sobre fitness/saúde, redirecione gentilmente para o tema.`
+const SYSTEM_PROMPT = `Você é o FitAI, assistente pessoal de fitness integrado ao app FitLife.
+Você pode responder perguntas E CRIAR conteúdo diretamente no app quando o usuário pedir.
 
-async function askGroq(messages) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages.map(m => ({ role: m.role, content: m.content }))
-      ],
-      temperature: 0.7,
-      max_tokens: 512,
-    })
-  })
+CAPACIDADES DE CRIAÇÃO:
+Quando o usuário pedir para montar/criar um treino, responda com texto curto descrevendo o treino E inclua exatamente este bloco ao final:
+[ACTION]{"type":"create_workout","exercises":[{"name":"Nome","category":"peito","sets":4,"reps":10,"duration":null}]}[/ACTION]
 
-  if (!res.ok) throw new Error('Erro na API Groq')
-  const data = await res.json()
-  return data.choices?.[0]?.message?.content || 'Desculpe, não consegui responder agora.'
+Categorias válidas (use EXATAMENTE uma dessas): peito, costas, pernas, ombros, biceps, triceps, abdomen, cardio, outro
+- series/repetições: preencha sets e reps, duration = null
+- cardio/plank: duration em minutos, sets = null, reps = null
+- Inclua de 5 a 8 exercícios por treino
+- Varie as categorias para criar um treino completo e equilibrado
+
+Quando o usuário pedir para criar uma tarefa, inclua:
+[ACTION]{"type":"create_task","tasks":[{"title":"Título da tarefa","priority":"media"}]}[/ACTION]
+Prioridades válidas: alta, media, baixa
+
+REGRAS:
+- Português brasileiro, direto e motivador
+- Sem markdown (sem **, ##, *, etc.)
+- Máximo 3 parágrafos curtos
+- Se pedido não for de fitness/saúde, redirecione gentilmente`
+
+/* ── Parse [ACTION] block from AI response ───────────────────── */
+function parseAction(text) {
+  const match = text.match(/\[ACTION\]([\s\S]*?)\[\/ACTION\]/)
+  if (!match) return { display: text, action: null }
+  const display = text.replace(/\[ACTION\][\s\S]*?\[\/ACTION\]/, '').trim()
+  try {
+    return { display, action: JSON.parse(match[1]) }
+  } catch {
+    return { display: text, action: null }
+  }
 }
 
+/* ── Execute AI action in Supabase ───────────────────────────── */
+async function executeAction(action, userId) {
+  const today = new Date().toISOString().split('T')[0]
+
+  if (action.type === 'create_workout') {
+    const validCats = ['peito','costas','pernas','ombros','biceps','triceps','abdomen','cardio','outro']
+    const rows = (action.exercises || []).map(ex => ({
+      user_id:  userId,
+      name:     ex.name,
+      category: validCats.includes(ex.category) ? ex.category : 'outro',
+      sets:     ex.sets     ?? null,
+      reps:     ex.reps     ?? null,
+      duration: ex.duration ?? null,
+      done:     false,
+      date:     today,
+    }))
+    const { error } = await supabase.from('workouts').insert(rows)
+    if (error) throw error
+    return { type: 'create_workout', count: rows.length }
+  }
+
+  if (action.type === 'create_task') {
+    const rows = (action.tasks || []).map(t => ({
+      user_id:     userId,
+      title:       t.title,
+      description: t.description || '',
+      priority:    ['alta','media','baixa'].includes(t.priority) ? t.priority : 'media',
+      done:        false,
+      date:        today,
+      due_date:    t.due_date || null,
+    }))
+    const { error } = await supabase.from('tasks').insert(rows)
+    if (error) throw error
+    return { type: 'create_task', count: rows.length }
+  }
+
+  return null
+}
+
+/* ── Action confirmation banner ──────────────────────────────── */
+function ActionBanner({ result, primary }) {
+  if (!result) return null
+  const isWorkout = result.type === 'create_workout'
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 12px', borderRadius: 10, marginTop: 6,
+      background: isWorkout ? `${primary}18` : 'rgba(16,185,129,0.12)',
+      border: `1px solid ${isWorkout ? `${primary}40` : 'rgba(16,185,129,0.3)'}`,
+    }}>
+      {isWorkout
+        ? <Dumbbell size={14} style={{ color: primary, flexShrink: 0 }} />
+        : <CheckSquare size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+      }
+      <span style={{ fontSize: 12, color: isWorkout ? primary : '#10b981', fontWeight: 600 }}>
+        {isWorkout
+          ? `✅ ${result.count} exercícios criados! Abra Treinos para ver.`
+          : `✅ ${result.count} tarefa(s) criada(s)! Abra Tarefas para ver.`
+        }
+      </span>
+    </div>
+  )
+}
+
+/* ── Main component ──────────────────────────────────────────── */
 export default function AIChat() {
-  const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Olá! 💪 Sou o FitAI, seu consultor de treino e dieta. Como posso te ajudar hoje?'
-    }
-  ])
-  const [input, setInput] = useState('')
+  const { user }              = useAuth()
+  const { primary }           = useSettings()
+
+  const [open,     setOpen]     = useState(false)
+  const [messages, setMessages] = useState([{
+    role: 'assistant',
+    content: 'Olá! 💪 Sou o FitAI. Posso responder dúvidas de treino e dieta, e também montar treinos direto no app. É só pedir!',
+    actionResult: null,
+  }])
+  const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
-  const [noKey, setNoKey] = useState(false)
+  const [noKey,   setNoKey]   = useState(false)
+
   const bottomRef = useRef(null)
-  const inputRef = useRef(null)
+  const inputRef  = useRef(null)
 
   useEffect(() => {
-    if (!GROQ_API_KEY || GROQ_API_KEY === 'SUA_CHAVE_AQUI') {
-      setNoKey(true)
-    }
+    if (!GROQ_API_KEY || GROQ_API_KEY === 'SUA_CHAVE_AQUI') setNoKey(true)
   }, [])
 
   useEffect(() => {
     if (open) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-      setTimeout(() => inputRef.current?.focus(), 100)
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      setTimeout(() => inputRef.current?.focus(), 120)
     }
   }, [open, messages])
 
   const send = async () => {
     const text = input.trim()
-    if (!text || loading) return
-    if (noKey) return
+    if (!text || loading || noKey) return
 
-    const newMessages = [...messages, { role: 'user', content: text }]
-    setMessages(newMessages)
+    const userMsg = { role: 'user', content: text, actionResult: null }
+    const history = [...messages, userMsg]
+    setMessages(history)
     setInput('')
     setLoading(true)
 
     try {
-      const reply = await askGroq(newMessages)
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...history.map(m => ({ role: m.role, content: m.content })),
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        }),
+      })
+      if (!res.ok) throw new Error('API error')
+      const data  = await res.json()
+      const raw   = data.choices?.[0]?.message?.content || 'Desculpe, não consegui responder agora.'
+
+      const { display, action } = parseAction(raw)
+
+      let actionResult = null
+      if (action && user) {
+        try {
+          actionResult = await executeAction(action, user.id)
+        } catch {
+          actionResult = { type: action.type, error: true }
+        }
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: display, actionResult }])
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ Não consegui responder agora. Verifique sua chave da API Groq no Vercel.'
+        content: '⚠️ Não consegui responder. Verifique a chave VITE_GROQ_API_KEY no Vercel.',
+        actionResult: null,
       }])
     } finally {
       setLoading(false)
@@ -89,91 +186,140 @@ export default function AIChat() {
   }
 
   const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      send()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+  }
+
+  const SUGGESTIONS = [
+    'Monte um treino de peito para mim',
+    'Treino completo para iniciantes',
+    'Crie uma tarefa: beber 2L de água',
+  ]
+
+  /* ── Styles (dark theme with CSS vars) ────────────────────── */
+  const S = {
+    panel: {
+      width: 370, height: 520,
+      background: 'var(--sidebar-bg)',
+      border: '1px solid var(--border)',
+      borderRadius: 20,
+      boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    },
+    header: {
+      padding: '12px 16px',
+      borderBottom: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      background: 'var(--surface)', flexShrink: 0,
+    },
+    messages: {
+      flex: 1, overflowY: 'auto', padding: '14px 14px',
+      display: 'flex', flexDirection: 'column', gap: 10,
+    },
+    bubble: (isUser) => ({
+      maxWidth: '80%',
+      padding: '9px 13px',
+      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+      background: isUser ? primary : 'var(--surface)',
+      color: isUser ? '#0a0a0a' : 'var(--text)',
+      fontSize: 13, lineHeight: 1.55,
+      border: isUser ? 'none' : '1px solid var(--border)',
+      alignSelf: isUser ? 'flex-end' : 'flex-start',
+      wordBreak: 'break-word',
+    }),
+    input: {
+      flex: 1,
+      background: 'var(--input-bg)',
+      border: '1px solid var(--border-md)',
+      color: 'var(--text)',          /* ← fix: explicit text color */
+      borderRadius: 12,
+      padding: '9px 13px',
+      fontSize: 13.5,
+      outline: 'none',
+      fontFamily: 'inherit',
+    },
+    sendBtn: (canSend) => ({
+      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+      background: canSend ? primary : 'var(--border-md)',
+      border: 'none', cursor: canSend ? 'pointer' : 'not-allowed',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transition: 'background 0.15s',
+      color: canSend ? '#0a0a0a' : 'var(--text-faint)',
+    }),
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div style={{ position: 'fixed', bottom: 24, right: 20, zIndex: 300, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
 
-      {/* Chat Panel */}
+      {/* ── Chat Panel ──────────────────────────────────────────── */}
       {open && (
-        <div className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden"
-          style={{ height: '500px' }}>
+        <div style={S.panel}>
 
           {/* Header */}
-          <div className="bg-blue-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                <Dumbbell size={16} className="text-white" />
+          <div style={S.header}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: `${primary}20`, border: `1px solid ${primary}35`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={16} style={{ color: primary }} />
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">FitAI</p>
-                <p className="text-blue-200 text-xs">Consultor fitness</p>
+                <p style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', margin: 0 }}>FitAI</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>Assistente fitness</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition">
+            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
               <X size={18} />
             </button>
           </div>
 
-          {/* Aviso sem chave */}
+          {/* No-key warning */}
           {noKey && (
-            <div className="mx-3 mt-3 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5 text-xs text-yellow-700 flex-shrink-0">
-              ⚠️ <strong>Chave da API não configurada.</strong> Adicione{' '}
-              <code className="bg-yellow-100 px-1 rounded">VITE_GROQ_API_KEY</code>{' '}
-              nas variáveis de ambiente do Vercel para ativar a IA.
+            <div style={{ margin: '10px 12px 0', padding: '10px 12px', borderRadius: 10, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', fontSize: 12, color: '#fbbf24', flexShrink: 0 }}>
+              ⚠️ Configure <strong>VITE_GROQ_API_KEY</strong> nas variáveis de ambiente do Vercel para ativar a IA.
             </div>
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+          <div style={S.messages}>
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                  msg.role === 'assistant' ? 'bg-blue-100' : 'bg-slate-100'
-                }`}>
-                  {msg.role === 'assistant'
-                    ? <Bot size={14} className="text-blue-600" />
-                    : <User size={14} className="text-slate-500" />
-                  }
-                </div>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'assistant'
-                    ? 'bg-slate-100 text-slate-700 rounded-tl-sm'
-                    : 'bg-blue-600 text-white rounded-tr-sm'
-                }`}>
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div style={S.bubble(msg.role === 'user')}>
                   {msg.content}
                 </div>
+                {msg.actionResult && !msg.actionResult.error && (
+                  <ActionBanner result={msg.actionResult} primary={primary} />
+                )}
+                {msg.actionResult?.error && (
+                  <div style={{ fontSize: 11, color: '#f87171', marginTop: 4 }}>
+                    ⚠️ Erro ao criar no app. Tente novamente.
+                  </div>
+                )}
               </div>
             ))}
 
+            {/* Typing indicator */}
             {loading && (
-              <div className="flex gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Bot size={14} className="text-blue-600" />
-                </div>
-                <div className="bg-slate-100 px-3 py-2.5 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px 16px 16px 4px', alignSelf: 'flex-start' }}>
+                {[0, 150, 300].map(delay => (
+                  <span key={delay} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${delay}ms`, display: 'inline-block' }} />
+                ))}
               </div>
             )}
-
             <div ref={bottomRef} />
           </div>
 
-          {/* Sugestões rápidas */}
+          {/* Quick suggestions — only on first message */}
           {messages.length === 1 && (
-            <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide flex-shrink-0">
-              {['Como ganhar massa?', 'Dieta para emagrecer', 'Treino para iniciantes'].map(s => (
+            <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, overflowX: 'auto', flexShrink: 0 }}>
+              {SUGGESTIONS.map(s => (
                 <button
                   key={s}
                   onClick={() => { setInput(s); inputRef.current?.focus() }}
-                  className="text-xs text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full whitespace-nowrap hover:bg-blue-100 transition flex-shrink-0"
+                  style={{
+                    fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+                    padding: '5px 11px', borderRadius: 20,
+                    background: `${primary}14`, border: `1px solid ${primary}35`,
+                    color: primary, cursor: 'pointer',
+                  }}
                 >
                   {s}
                 </button>
@@ -181,40 +327,57 @@ export default function AIChat() {
             </div>
           )}
 
-          {/* Input */}
-          <div className="border-t border-slate-100 p-3 flex gap-2 flex-shrink-0">
+          {/* Input area */}
+          <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
             <input
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Pergunte sobre treino ou dieta..."
+              placeholder="Pergunte ou peça para montar um treino..."
               disabled={loading || noKey}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50"
+              style={{ ...S.input, opacity: (loading || noKey) ? 0.5 : 1 }}
             />
             <button
               onClick={send}
               disabled={!input.trim() || loading || noKey}
-              className="w-9 h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition flex-shrink-0"
+              style={S.sendBtn(input.trim() && !loading && !noKey)}
             >
-              {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              {loading
+                ? <Loader2 size={15} style={{ animation: 'spin 0.75s linear infinite' }} />
+                : <Send size={15} />
+              }
             </button>
           </div>
         </div>
       )}
 
-      {/* FAB Button */}
+      {/* ── FAB button ──────────────────────────────────────────── */}
       <button
-        onClick={() => setOpen(!open)}
-        className={`w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-200 ${
-          open ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
-        }`}
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: 52, height: 52, borderRadius: 16,
+          background: open ? 'var(--surface)' : primary,
+          border: open ? '1px solid var(--border)' : 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', outline: 'none',
+          boxShadow: open ? 'none' : `0 4px 20px ${primary}50`,
+          transition: 'all 0.2s ease',
+        }}
       >
         {open
-          ? <X size={22} className="text-white" />
-          : <MessageCircle size={22} className="text-white" />
+          ? <X size={20} style={{ color: 'var(--text)' }} />
+          : <MessageCircle size={20} style={{ color: '#0a0a0a' }} />
         }
       </button>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0.7); opacity: 0.5 }
+          40% { transform: scale(1); opacity: 1 }
+        }
+        @keyframes spin { to { transform: rotate(360deg) } }
+      `}</style>
     </div>
   )
 }
