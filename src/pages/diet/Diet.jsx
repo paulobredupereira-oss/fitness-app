@@ -1,22 +1,25 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
+import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { UtensilsCrossed, Plus, Trash2, CheckCircle2, Circle, Loader2, Flame, Camera, X, ImageOff } from 'lucide-react'
 
 const P = 'var(--primary)'
 
-const mealTypes = [
-  { value: 'cafe', label: '☀️ Café da manhã', color: 'bg-yellow-900/40 border-yellow-700/50 text-yellow-400' },
-  { value: 'lanche1', label: '🍎 Lanche da manhã', color: 'bg-orange-900/40 border-orange-700/50 text-orange-400' },
-  { value: 'almoco', label: '🍽️ Almoço', color: 'bg-emerald-900/40 border-emerald-700/50 text-emerald-400' },
-  { value: 'lanche2', label: '🥤 Lanche da tarde', color: 'bg-teal-900/40 border-teal-700/50 text-teal-400' },
-  { value: 'jantar', label: '🌙 Jantar', color: 'bg-blue-900/40 border-blue-700/50 text-blue-400' },
-  { value: 'ceia', label: '🌛 Ceia', color: 'bg-purple-900/40 border-purple-700/50 text-purple-400' },
-]
+function getMealTypes(t) {
+  return [
+    { value: 'cafe',    label: t('diet.meals.cafe'),    color: 'bg-yellow-900/40 border-yellow-700/50 text-yellow-400' },
+    { value: 'lanche1', label: t('diet.meals.lanche1'), color: 'bg-orange-900/40 border-orange-700/50 text-orange-400' },
+    { value: 'almoco',  label: t('diet.meals.almoco'),  color: 'bg-emerald-900/40 border-emerald-700/50 text-emerald-400' },
+    { value: 'lanche2', label: t('diet.meals.lanche2'), color: 'bg-teal-900/40 border-teal-700/50 text-teal-400' },
+    { value: 'jantar',  label: t('diet.meals.jantar'),  color: 'bg-blue-900/40 border-blue-700/50 text-blue-400' },
+    { value: 'ceia',    label: t('diet.meals.ceia'),    color: 'bg-purple-900/40 border-purple-700/50 text-purple-400' },
+  ]
+}
 
-function MealCard({ meal, onToggle, onDelete, primary }) {
+function MealCard({ meal, onToggle, onDelete, mealTypes, primary }) {
   const type = mealTypes.find(m => m.value === meal.meal_type) || mealTypes[0]
   return (
     <div className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${meal.done ? 'opacity-50 border-white/5 bg-white/[0.02]' : 'bg-[#141414] border-white/10 hover:border-white/20'}`}>
@@ -49,8 +52,7 @@ function MealCard({ meal, onToggle, onDelete, primary }) {
 }
 
 // ── Photo Album ───────────────────────────────────────────────────────────────
-
-function PhotoAlbum({ userId, today }) {
+function PhotoAlbum({ userId, today, t, primary }) {
   const [photos, setPhotos] = useState([])
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -108,9 +110,9 @@ function PhotoAlbum({ userId, today }) {
         <div>
           <h2 className="text-base font-semibold text-white/80 flex items-center gap-2">
             <Camera size={18} style={{ color: P }} />
-            Fotos do Dia
+            {t('diet.photos')}
           </h2>
-          <p className="text-xs text-white/30 mt-0.5">Registre o que você comeu hoje</p>
+          <p className="text-xs text-white/30 mt-0.5">{t('diet.photosSubtitle')}</p>
         </div>
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -118,7 +120,7 @@ function PhotoAlbum({ userId, today }) {
           className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 text-sm font-medium px-3 py-2 rounded-xl transition disabled:opacity-50"
         >
           {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          {uploading ? 'Enviando...' : 'Adicionar foto'}
+          {uploading ? t('diet.uploading') : t('diet.addPhoto')}
         </button>
         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
       </div>
@@ -130,8 +132,8 @@ function PhotoAlbum({ userId, today }) {
       ) : photos.length === 0 ? (
         <div className="border-2 border-dashed border-white/10 rounded-2xl py-10 text-center">
           <ImageOff size={32} className="mx-auto text-white/20 mb-2" />
-          <p className="text-sm text-white/40 font-medium">Nenhuma foto ainda</p>
-          <p className="text-xs text-white/20 mt-1">Clique em "Adicionar foto" para registrar</p>
+          <p className="text-sm text-white/40 font-medium">{t('diet.noPhotos')}</p>
+          <p className="text-xs text-white/20 mt-1">{t('diet.noPhotosHint')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3">
@@ -150,7 +152,7 @@ function PhotoAlbum({ userId, today }) {
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
             className="aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-white/20 hover:border-[#ff4d2e]/50 hover:text-[#ff4d2e] transition disabled:opacity-50">
             {uploading ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
-            <span className="text-xs mt-1">{uploading ? 'Enviando' : 'Foto'}</span>
+            <span className="text-xs mt-1">{uploading ? t('diet.uploading') : t('diet.photo')}</span>
           </button>
         </div>
       )}
@@ -171,10 +173,12 @@ function PhotoAlbum({ userId, today }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 export default function Diet() {
   const { user } = useAuth()
-  const { primary } = useSettings()
+  const { primary, language } = useSettings()
+  const t = getT(language)
+  const mealTypes = getMealTypes(t)
+
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -224,45 +228,50 @@ export default function Diet() {
 
   return (
     <Layout>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
             <UtensilsCrossed style={{ color: P }} size={26} />
-            Dieta de Hoje
+            {t('diet.title')}
           </h1>
           <p className="text-white/40 text-sm mt-1">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
           style={{ background: P }}>
           <Plus size={16} />
-          Adicionar refeição
+          {t('diet.addMeal')}
         </button>
       </div>
 
+      {/* Stats */}
       {meals.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
             <p className="text-2xl font-bold text-white/90">{done}</p>
-            <p className="text-xs text-white/40 mt-0.5">Refeições feitas</p>
+            <p className="text-xs text-white/40 mt-0.5">{t('diet.mealsDone')}</p>
           </div>
           <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
             <p className="text-2xl font-bold" style={{ color: P }}>{pct}%</p>
-            <p className="text-xs text-white/40 mt-0.5">Dieta seguida</p>
+            <p className="text-xs text-white/40 mt-0.5">{t('diet.dietFollowed')}</p>
           </div>
           <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
             <p className="text-2xl font-bold text-orange-400">{totalCals > 0 ? totalCals : '—'}</p>
-            <p className="text-xs text-white/40 mt-0.5">kcal consumidas</p>
+            <p className="text-xs text-white/40 mt-0.5">{t('diet.kcalConsumed')}</p>
           </div>
         </div>
       )}
 
+      {/* Progress bar */}
       {meals.length > 0 && (
         <div className="bg-[#141414] border border-white/8 rounded-2xl p-5 mb-6">
           <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-white/70">{done} de {meals.length} refeições realizadas</span>
+            <span className="font-medium text-white/70">
+              {done} {t('diet.of')} {meals.length} {t('diet.mealsOf')}
+            </span>
             <span className="font-semibold" style={{ color: P }}>{pct}%</span>
           </div>
           <div className="w-full bg-white/10 rounded-full h-2">
@@ -271,11 +280,12 @@ export default function Diet() {
         </div>
       )}
 
+      {/* Form */}
       {showForm && (
         <form onSubmit={addMeal} className="bg-[#141414] border border-white/10 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-white/70 text-sm">Adicionar refeição</h3>
+          <h3 className="font-semibold text-white/70 text-sm">{t('diet.formTitle')}</h3>
           <input value={food} onChange={e => setFood(e.target.value)}
-            placeholder="O que você vai comer? Ex: Peito de frango grelhado"
+            placeholder={t('diet.foodPlaceholder')}
             autoFocus required
             className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition" />
           <div className="flex gap-3">
@@ -284,18 +294,25 @@ export default function Diet() {
               {mealTypes.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
             <input type="number" value={calories} onChange={e => setCalories(e.target.value)}
-              placeholder="kcal (opcional)"
+              placeholder={t('diet.kcalPlaceholder')}
               className="w-36 bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition" />
           </div>
           <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setShowForm(false)} className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition">Cancelar</button>
-            <button type="submit" disabled={adding} className="text-sm text-black font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2" style={{ background: P }}>
-              {adding && <Loader2 size={14} className="animate-spin" />}Adicionar
+            <button type="button" onClick={() => setShowForm(false)}
+              className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition">
+              {t('diet.cancel')}
+            </button>
+            <button type="submit" disabled={adding}
+              className="text-sm text-black font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2"
+              style={{ background: P }}>
+              {adding && <Loader2 size={14} className="animate-spin" />}
+              {t('diet.add')}
             </button>
           </div>
         </form>
       )}
 
+      {/* List */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 size={28} className="animate-spin" style={{ color: P }} />
@@ -303,8 +320,8 @@ export default function Diet() {
       ) : meals.length === 0 ? (
         <div className="text-center py-16 text-white/30">
           <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-white/50">Nenhuma refeição hoje</p>
-          <p className="text-sm mt-1">Planeje sua dieta clicando em "Adicionar refeição"</p>
+          <p className="font-medium text-white/50">{t('diet.empty')}</p>
+          <p className="text-sm mt-1">{t('diet.emptyHint')}</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -312,14 +329,14 @@ export default function Diet() {
             <div key={group.value}>
               <h3 className="text-xs font-semibold text-white/30 uppercase tracking-wide mb-2">{group.label}</h3>
               <div className="space-y-2">
-                {group.items.map(m => <MealCard key={m.id} meal={m} onToggle={toggleMeal} onDelete={deleteMeal} primary={primary} />)}
+                {group.items.map(m => <MealCard key={m.id} meal={m} onToggle={toggleMeal} onDelete={deleteMeal} mealTypes={mealTypes} primary={primary} />)}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {user && <PhotoAlbum userId={user.id} today={today} />}
+      {user && <PhotoAlbum userId={user.id} today={today} t={t} primary={primary} />}
     </Layout>
   )
 }
