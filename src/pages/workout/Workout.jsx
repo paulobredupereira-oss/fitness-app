@@ -299,9 +299,32 @@ export default function Workout() {
     setShowForm(false); setAdding(false)
   }
 
+  // Helper: check if exercise is "done" for today (recurring = per-day, regular = boolean)
+  const getEffectiveDone = (ex) => {
+    if (ex.repeat_days) {
+      try { return JSON.parse(ex.completed_dates || '[]').includes(today) } catch { return false }
+    }
+    return !!ex.done
+  }
+
   const toggleExercise = async (ex) => {
-    const { data } = await supabase.from('workouts').update({ done: !ex.done }).eq('id', ex.id).select().single()
-    if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
+    if (ex.repeat_days) {
+      // Recurring: toggle today's date in completed_dates
+      let dates = []
+      try { dates = JSON.parse(ex.completed_dates || '[]') } catch {}
+      const isToday = dates.includes(today)
+      const newDates = isToday ? dates.filter(d => d !== today) : [...dates, today]
+      const { data } = await supabase.from('workouts')
+        .update({ completed_dates: JSON.stringify(newDates) })
+        .eq('id', ex.id).select().single()
+      if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
+    } else {
+      // Regular workout: toggle done boolean
+      const { data } = await supabase.from('workouts')
+        .update({ done: !ex.done })
+        .eq('id', ex.id).select().single()
+      if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
+    }
   }
 
   const deleteExercise = async (id) => {
@@ -344,10 +367,13 @@ export default function Workout() {
     setEditingId(null)
   }
 
-  const done      = sportExercises.filter(e => e.done).length
-  const pct       = sportExercises.length > 0 ? Math.round((done / sportExercises.length) * 100) : 0
-  const pending   = sportExercises.filter(e => !e.done)
-  const completed = sportExercises.filter(e => e.done)
+  // Map exercises so ExerciseCard sees the correct done state
+  const sportExercisesEff = sportExercises.map(e => ({ ...e, done: getEffectiveDone(e) }))
+  const doneCount  = sportExercisesEff.filter(e => e.done).length
+  const pct        = sportExercisesEff.length > 0 ? Math.round((doneCount / sportExercisesEff.length) * 100) : 0
+  const pending    = sportExercisesEff.filter(e => !e.done)
+  const completed  = sportExercisesEff.filter(e => e.done)
+  const done       = doneCount
 
   const inputStyle = {
     width: '100%', boxSizing: 'border-box',
