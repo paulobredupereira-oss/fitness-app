@@ -49,7 +49,7 @@ export const i18n = {
       priorities: { alta: 'Alta', media: 'Média', baixa: 'Baixa' },
     },
     workout: {
-      title: 'Treino de Hoje',
+      title: 'Treinos',
       addExercise: 'Adicionar exercício',
       pending: 'Pendentes',
       completed: 'Concluídos',
@@ -162,7 +162,7 @@ export const i18n = {
       priorities: { alta: 'High', media: 'Medium', baixa: 'Low' },
     },
     workout: {
-      title: "Today's Workout",
+      title: 'Workouts',
       addExercise: 'Add exercise',
       pending: 'Pending',
       completed: 'Completed',

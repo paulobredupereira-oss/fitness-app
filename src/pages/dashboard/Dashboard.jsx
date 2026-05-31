@@ -146,56 +146,6 @@ const Card = ({ title, subtitle, action, children, compact }) => (
   </div>
 )
 
-// ── Mobile bottom tab bar ────────────────────────────────────────────────────
-const MobileTabBar = () => (
-  <div style={{
-    position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-    padding: '8px 16px 28px',
-    background: 'linear-gradient(to top, var(--bg) 60%, transparent)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-  }}>
-    <div style={{
-      background: SURFACE, borderRadius: 22, border: `1px solid ${BORDER}`,
-      padding: '8px 10px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      boxShadow: '0 8px 28px rgba(0,0,0,0.3)',
-    }}>
-      {[
-        { to: '/dashboard', icon: 'tasks', label: 'Hoje' },
-        { to: '/treinos', icon: 'flame', label: 'Treinos' },
-        { fab: true },
-        { to: '/dieta', icon: 'food', label: 'Dieta' },
-        { to: '/tarefas', icon: 'dumbbell', label: 'Metas' },
-      ].map((tab, i) => {
-        if (tab.fab) return (
-          <Link key={i} to="/dashboard" style={{ textDecoration: 'none' }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 14,
-              background: P, color: ON_P,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 14px color-mix(in srgb, var(--primary) 33%, transparent)',
-            }}>
-              <Icon name="play" size={18} color={ON_P} />
-            </div>
-          </Link>
-        )
-        return (
-          <Link key={i} to={tab.to} style={{ textDecoration: 'none' }}>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              padding: '6px 12px', borderRadius: 10, color: MUTED2,
-            }}>
-              <Icon name={tab.icon} size={18} color={MUTED2} />
-              <span style={{ fontSize: 9.5, fontWeight: 500, fontFamily: 'inherit', color: MUTED2 }}>{tab.label}</span>
-            </div>
-          </Link>
-        )
-      })}
-    </div>
-  </div>
-)
-
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user } = useAuth()
@@ -267,23 +217,21 @@ export default function Dashboard() {
   // ── Mobile Layout ────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <div style={{ background: BG, minHeight: '100vh', color: TEXT, fontFamily: '"Geist", system-ui, sans-serif', paddingBottom: 110 }}>
+      <Layout>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: P, color: ON_P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
-              {name[0].toUpperCase()}
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: MUTED2, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{dateLabel.split(',')[0]}</div>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>Olá, {name.split(' ')[0]}</div>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: P, color: ON_P, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+            {name[0].toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{dateLabel.split(',')[0]}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Olá, {name.split(' ')[0]}</div>
           </div>
         </div>
 
         {/* Greeting */}
-        <div style={{ padding: '0 20px 20px' }}>
-          <h1 style={{ fontSize: 30, fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.05 }}>
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.05, color: 'var(--text)' }}>
             {getGreeting()},<br />vamos lá! 💪
           </h1>
           <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
@@ -294,93 +242,69 @@ export default function Dashboard() {
         </div>
 
         {/* Hero workout card */}
-        <div style={{ padding: '0 20px' }}>
-          <div style={{ borderRadius: 22, background: TEXT, color: BG, padding: 20, position: 'relative', overflow: 'hidden' }}>
-            <svg viewBox="0 0 350 200" style={{ position: 'absolute', inset: 0, opacity: 0.07 }} preserveAspectRatio="none">
-              <circle cx="320" cy="40" r="90" fill="none" stroke="currentColor" strokeWidth="1" />
-              <circle cx="320" cy="40" r="60" fill="none" stroke="currentColor" strokeWidth="1" />
-              <circle cx="320" cy="40" r="32" fill="currentColor" />
-            </svg>
-            <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 25%, transparent), transparent 65%)' }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <span style={{ width: 6, height: 6, borderRadius: 3, background: P }} />
-                <span style={{ fontSize: 10.5, color: 'rgba(10,10,10,0.55)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Treino de Hoje</span>
-              </div>
-              <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: 6 }}>
-                {stats.workouts.total > 0 ? `${stats.workouts.done} exercícios feitos` : 'Nenhum treino hoje'}
-              </div>
-              <div style={{ fontSize: 12.5, color: 'rgba(10,10,10,0.55)', marginBottom: 16 }}>
-                {stats.workouts.total > 0 ? `${stats.workouts.total - stats.workouts.done} restantes` : 'Adicione exercícios para começar'}
-              </div>
-              {stats.workouts.total > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(10,10,10,0.12)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${stats.workouts.total > 0 ? Math.round(stats.workouts.done / stats.workouts.total * 100) : 0}%`, background: P, borderRadius: 3 }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 11, color: 'rgba(10,10,10,0.5)' }}>
-                    <span>{stats.workouts.done} de {stats.workouts.total}</span>
-                    <span>{Math.round(stats.workouts.done / (stats.workouts.total || 1) * 100)}%</span>
-                  </div>
-                </div>
-              )}
-              <Link to="/treinos" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                background: P, color: ON_P, borderRadius: 12, padding: '13px 18px',
-                fontSize: 14, fontWeight: 600, textDecoration: 'none',
-              }}>
-                <Icon name="play" size={13} color={ON_P} />
-                {stats.workouts.total > 0 ? 'Ver treinos' : 'Adicionar treino'}
-              </Link>
+        <div style={{ borderRadius: 22, background: TEXT, color: BG, padding: 20, position: 'relative', overflow: 'hidden', marginBottom: 12 }}>
+          <svg viewBox="0 0 350 200" style={{ position: 'absolute', inset: 0, opacity: 0.07 }} preserveAspectRatio="none">
+            <circle cx="320" cy="40" r="90" fill="none" stroke="currentColor" strokeWidth="1" />
+            <circle cx="320" cy="40" r="60" fill="none" stroke="currentColor" strokeWidth="1" />
+            <circle cx="320" cy="40" r="32" fill="currentColor" />
+          </svg>
+          <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle at center, color-mix(in srgb, var(--primary) 25%, transparent), transparent 65%)' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ width: 6, height: 6, borderRadius: 3, background: P }} />
+              <span style={{ fontSize: 10.5, color: 'rgba(10,10,10,0.55)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Treino de Hoje</span>
             </div>
+            <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.035em', lineHeight: 1.1, marginBottom: 6 }}>
+              {stats.workouts.total > 0 ? `${stats.workouts.done} exercícios feitos` : 'Nenhum treino hoje'}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'rgba(10,10,10,0.55)', marginBottom: 16 }}>
+              {stats.workouts.total > 0 ? `${stats.workouts.total - stats.workouts.done} restantes` : 'Adicione exercícios para começar'}
+            </div>
+            {stats.workouts.total > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ height: 5, borderRadius: 3, background: 'rgba(10,10,10,0.12)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.round(stats.workouts.done / (stats.workouts.total || 1) * 100)}%`, background: P, borderRadius: 3 }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 11, color: 'rgba(10,10,10,0.5)' }}>
+                  <span>{stats.workouts.done} de {stats.workouts.total}</span>
+                  <span>{Math.round(stats.workouts.done / (stats.workouts.total || 1) * 100)}%</span>
+                </div>
+              </div>
+            )}
+            <Link to="/treinos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: P, color: ON_P, borderRadius: 12, padding: '13px 18px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              <Icon name="play" size={13} color={ON_P} />
+              {stats.workouts.total > 0 ? 'Ver treinos' : 'Adicionar treino'}
+            </Link>
           </div>
         </div>
 
         {/* Stats 2x2 */}
-        <div style={{ padding: '12px 20px 0' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ background: SURFACE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 14 }}>
-              <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 8 }}>Tarefas</div>
-              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.035em' }}>{stats.tasks.done}<span style={{ fontSize: 13, color: MUTED, marginLeft: 2 }}>/{stats.tasks.total}</span></div>
-              <div style={{ fontSize: 10.5, color: stats.tasks.done > 0 ? '#3ec47a' : MUTED2, marginTop: 5 }}>
-                {stats.tasks.done > 0 ? '↗ ' : ''}{stats.tasks.total > 0 ? `${Math.round(stats.tasks.done / stats.tasks.total * 100)}%` : 'Nenhuma'}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+          {[
+            { label: 'Tarefas',    done: stats.tasks.done,    total: stats.tasks.total,    pct: stats.tasks.total > 0 ? `${Math.round(stats.tasks.done/stats.tasks.total*100)}%` : 'Nenhuma' },
+            { label: 'Refeições',  done: stats.meals.done,    total: stats.meals.total,    pct: stats.meals.total > 0 ? `${mealsPct}% dieta` : 'Nenhuma' },
+            { label: 'Exercícios', done: stats.workouts.done, total: stats.workouts.total, pct: stats.workouts.total > 0 ? `${Math.round(stats.workouts.done/stats.workouts.total*100)}%` : 'Nenhum' },
+            { label: 'Total hoje', done: overallPct,          total: null,                 pct: `${totalDone}/${totalItems} itens`, isPercent: true },
+          ].map(({ label, done, total, pct, isPercent }) => (
+            <div key={label} style={{ background: SURFACE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 14 }}>
+              <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 8 }}>{label}</div>
+              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.035em', color: 'var(--text)' }}>
+                {isPercent ? <>{done}<span style={{ fontSize: 13, color: MUTED, marginLeft: 1 }}>%</span></> : <>{done}<span style={{ fontSize: 13, color: MUTED, marginLeft: 2 }}>/{total}</span></>}
+              </div>
+              <div style={{ fontSize: 10.5, color: done > 0 ? '#3ec47a' : MUTED, marginTop: 5 }}>
+                {done > 0 ? '↗ ' : ''}{pct}
               </div>
             </div>
-            <div style={{ background: SURFACE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 14 }}>
-              <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 8 }}>Refeições</div>
-              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.035em' }}>{stats.meals.done}<span style={{ fontSize: 13, color: MUTED, marginLeft: 2 }}>/{stats.meals.total}</span></div>
-              <div style={{ fontSize: 10.5, color: stats.meals.done > 0 ? '#3ec47a' : MUTED2, marginTop: 5 }}>
-                {stats.meals.done > 0 ? '↗ ' : ''}{stats.meals.total > 0 ? `${mealsPct}% dieta` : 'Nenhuma'}
-              </div>
-            </div>
-            <div style={{ background: SURFACE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 14 }}>
-              <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 8 }}>Exercícios</div>
-              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.035em' }}>{stats.workouts.done}<span style={{ fontSize: 13, color: MUTED, marginLeft: 2 }}>/{stats.workouts.total}</span></div>
-              <div style={{ fontSize: 10.5, color: stats.workouts.done > 0 ? '#3ec47a' : MUTED2, marginTop: 5 }}>
-                {stats.workouts.done > 0 ? '↗ ' : ''}{stats.workouts.total > 0 ? `${Math.round(stats.workouts.done / stats.workouts.total * 100)}%` : 'Nenhum'}
-              </div>
-            </div>
-            <div style={{ background: SURFACE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 14 }}>
-              <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 8 }}>Total hoje</div>
-              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.035em' }}>{overallPct}<span style={{ fontSize: 13, color: MUTED, marginLeft: 1 }}>%</span></div>
-              <div style={{ fontSize: 10.5, color: overallPct > 50 ? '#3ec47a' : MUTED2, marginTop: 5 }}>
-                {overallPct > 0 ? '↗ ' : ''}{totalDone}/{totalItems} itens
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Weekly chart */}
-        <div style={{ padding: '12px 20px 0' }}>
-          <div style={{ background: SURFACE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: 18 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 4 }}>Atividade semanal</div>
-            <div style={{ fontSize: 11, color: MUTED2, marginBottom: 14 }}>Minutos de treino por dia</div>
-            <BarChart data={weeklyMins} />
-          </div>
+        <div style={{ background: SURFACE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 4, color: 'var(--text)' }}>Atividade semanal</div>
+          <div style={{ fontSize: 11, color: MUTED, marginBottom: 14 }}>Minutos de treino por dia</div>
+          <BarChart data={weeklyMins} />
         </div>
-
-        <MobileTabBar />
-      </div>
+      </Layout>
     )
   }
 

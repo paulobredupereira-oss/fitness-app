@@ -222,10 +222,18 @@ export default function Workout() {
   const ph    = sportPlaceholders[language]?.[selectedSport] || sportPlaceholders.pt[selectedSport]
 
   const fetchExercises = async () => {
-    const { data } = await supabase
+    // Fetch today's workouts + recurring ones (repeat_days set)
+    let { data, error } = await supabase
       .from('workouts').select('*')
-      .eq('user_id', user.id).eq('date', today)
+      .eq('user_id', user.id)
+      .or(`date.eq.${today},repeat_days.not.is.null`)
       .order('created_at', { ascending: true })
+    if (error) {
+      // repeat_days column may not exist yet — fall back to today only
+      ;({ data } = await supabase.from('workouts').select('*')
+        .eq('user_id', user.id).eq('date', today)
+        .order('created_at', { ascending: true }))
+    }
     setExercises(data || [])
     setLoading(false)
   }
