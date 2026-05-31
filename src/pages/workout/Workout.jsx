@@ -216,6 +216,8 @@ export default function Workout() {
   const [editRepeatEnabled,setEditRepeatEnabled] = useState(false)
   const [editRepeatDays,   setEditRepeatDays]   = useState([])
   const [saving,           setSaving]           = useState(false)
+  const [pendingOpen,      setPendingOpen]      = useState(true)
+  const [completedOpen,    setCompletedOpen]    = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -796,31 +798,75 @@ export default function Workout() {
           <p style={{ fontSize: 13 }}>{t('workout.emptyHint')}</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* ── Pending accordion ── */}
           {pending.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-                {t('workout.pending')} ({pending.length})
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {pending.map(e => editingId === e.id
-                  ? <InlineEditForm key={e.id} />
-                  : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
-                )}
-              </div>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setPendingOpen(o => !o)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    {t('workout.pending')}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: primary, borderRadius: 8, padding: '1px 7px' }}>
+                    {pending.length}
+                  </span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  style={{ color: 'var(--text-muted)', transform: pendingOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {pendingOpen && (
+                <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeSlideUp 0.18s ease' }}>
+                  {pending.map(e => editingId === e.id
+                    ? <InlineEditForm key={e.id} />
+                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                  )}
+                </div>
+              )}
             </div>
           )}
+
+          {/* ── Completed accordion ── */}
           {completed.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-                {t('workout.completed')} ({completed.length})
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {completed.map(e => editingId === e.id
-                  ? <InlineEditForm key={e.id} />
-                  : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
-                )}
-              </div>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', opacity: 0.9 }}>
+              <button
+                type="button"
+                onClick={() => setCompletedOpen(o => !o)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    {t('workout.completed')}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: '#3ec47a', borderRadius: 8, padding: '1px 7px' }}>
+                    {completed.length}
+                  </span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  style={{ color: 'var(--text-muted)', transform: completedOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {completedOpen && (
+                <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeSlideUp 0.18s ease' }}>
+                  {completed.map(e => editingId === e.id
+                    ? <InlineEditForm key={e.id} />
+                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
