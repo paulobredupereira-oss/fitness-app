@@ -4,7 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays } from 'lucide-react'
+import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays, Pencil, Check } from 'lucide-react'
 
 // ── Days of week ─────────────────────────────────────────────────────────────
 const DAYS = [
@@ -79,7 +79,7 @@ const sportPlaceholders = {
 }
 
 // ── Exercise card ─────────────────────────────────────────────────────────────
-function ExerciseCard({ exercise, onToggle, onDelete, cats, primary, sport }) {
+function ExerciseCard({ exercise, onToggle, onDelete, onEdit, cats, primary, sport }) {
   const [deleting, setDeleting] = useState(false)
   const isGym = sport === 'academia'
   const cat = isGym ? (cats.find(c => c.value === exercise.category) || cats[8]) : null
@@ -161,14 +161,24 @@ function ExerciseCard({ exercise, onToggle, onDelete, cats, primary, sport }) {
           })()}
         </div>
       </div>
-      <button
-        onClick={async () => { setDeleting(true); await onDelete(exercise.id) }}
-        disabled={deleting}
-        style={{ color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
-        className="hover:text-red-400 transition"
-      >
-        {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-      </button>
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <button
+          onClick={() => onEdit(exercise)}
+          style={{ color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          onMouseEnter={e => e.currentTarget.style.color = primary}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          onClick={async () => { setDeleting(true); await onDelete(exercise.id) }}
+          disabled={deleting}
+          style={{ color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          className="hover:text-red-400 transition"
+        >
+          {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+        </button>
+      </div>
     </div>
   )
 }
@@ -194,6 +204,18 @@ export default function Workout() {
   const [repeatEnabled, setRepeatEnabled] = useState(false)
   const [repeatDays, setRepeatDays]     = useState([])
   const [formError, setFormError]       = useState('')
+
+  // ── Edit state ────────────────────────────────────────────────────────────
+  const [editingId,        setEditingId]        = useState(null)
+  const [editName,         setEditName]         = useState('')
+  const [editCategory,     setEditCategory]     = useState('peito')
+  const [editSets,         setEditSets]         = useState('')
+  const [editReps,         setEditReps]         = useState('')
+  const [editDuration,     setEditDuration]     = useState('')
+  const [editDueDate,      setEditDueDate]      = useState('')
+  const [editRepeatEnabled,setEditRepeatEnabled] = useState(false)
+  const [editRepeatDays,   setEditRepeatDays]   = useState([])
+  const [saving,           setSaving]           = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -269,6 +291,41 @@ export default function Workout() {
     setExercises(prev => prev.filter(e => e.id !== id))
   }
 
+  const startEdit = (ex) => {
+    setEditingId(ex.id)
+    setEditName(ex.name || '')
+    setEditCategory(ex.category || 'peito')
+    setEditSets(ex.sets ? String(ex.sets) : '')
+    setEditReps(ex.reps ? String(ex.reps) : '')
+    setEditDuration(ex.duration ? String(ex.duration) : '')
+    setEditDueDate(ex.due_date || '')
+    const parsedDays = ex.repeat_days ? (() => { try { return JSON.parse(ex.repeat_days) } catch { return [] } })() : []
+    setEditRepeatEnabled(parsedDays.length > 0)
+    setEditRepeatDays(parsedDays)
+    setShowForm(false)
+  }
+
+  const cancelEdit = () => setEditingId(null)
+
+  const saveEdit = async (e) => {
+    e.preventDefault()
+    if (!editName.trim()) return
+    setSaving(true)
+    const updates = {
+      name:     editName.trim(),
+      category: selectedSport === 'academia' ? editCategory : selectedSport,
+      sets:     editSets     ? parseInt(editSets)     : null,
+      reps:     editReps     ? parseInt(editReps)     : null,
+      duration: editDuration ? parseInt(editDuration) : null,
+      due_date: editDueDate || null,
+      repeat_days: editRepeatEnabled && editRepeatDays.length > 0 ? JSON.stringify(editRepeatDays) : null,
+    }
+    const { data } = await supabase.from('workouts').update(updates).eq('id', editingId).select().single()
+    if (data) setExercises(prev => prev.map(ex => ex.id === editingId ? data : ex))
+    setSaving(false)
+    setEditingId(null)
+  }
+
   const done      = sportExercises.filter(e => e.done).length
   const pct       = sportExercises.length > 0 ? Math.round((done / sportExercises.length) * 100) : 0
   const pending   = sportExercises.filter(e => !e.done)
@@ -279,6 +336,133 @@ export default function Workout() {
     background: 'var(--input-bg)', border: '1px solid var(--border-md)',
     color: 'var(--text)', borderRadius: 12, padding: '10px 12px',
     fontSize: 13.5, outline: 'none', fontFamily: 'inherit',
+  }
+
+  // ── Inline edit form (renders in place of an exercise card) ──────────────
+  function InlineEditForm() {
+    const editCfg = sportFormConfig[selectedSport]
+    return (
+      <div style={{ background: 'var(--surface)', border: `2px solid ${primary}55`, borderRadius: 16, padding: 16, animation: 'fadeSlideUp 0.18s ease' }}>
+        <form onSubmit={saveEdit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <Pencil size={13} style={{ color: primary }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: primary }}>
+              {language === 'en' ? 'Edit exercise' : 'Editar exercício'}
+            </span>
+          </div>
+
+          <input value={editName} onChange={e => setEditName(e.target.value)} required autoFocus
+            style={inputStyle}
+            onFocus={e => e.target.style.borderColor = primary}
+            onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+          />
+
+          {editCfg.showCategory && (
+            <select value={editCategory} onChange={e => setEditCategory(e.target.value)}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+            >
+              {cats.map(c => <option key={c.value} value={c.value} style={{ background: 'var(--surface)' }}>{c.emoji} {c.label}</option>)}
+            </select>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${[editCfg.showSets, editCfg.showReps, editCfg.showDuration].filter(Boolean).length}, 1fr)`, gap: 10 }}>
+            {editCfg.showSets && (
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
+                  {editCfg.setsLabel ? editCfg.setsLabel[language] || editCfg.setsLabel.pt : t('workout.sets')}
+                </label>
+                <input type="number" min="1" value={editSets} onChange={e => setEditSets(e.target.value)} placeholder="4"
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = primary}
+                  onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+                />
+              </div>
+            )}
+            {editCfg.showReps && (
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
+                  {editCfg.distLabel ? editCfg.distLabel[language] || editCfg.distLabel.pt : t('workout.reps')}
+                </label>
+                <input type="number" min="1" value={editReps} onChange={e => setEditReps(e.target.value)} placeholder={editCfg.distLabel ? '10' : '12'}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = primary}
+                  onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+                />
+              </div>
+            )}
+            {editCfg.showDuration && (
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>{t('workout.duration')}</label>
+                <input type="number" min="1" value={editDuration} onChange={e => setEditDuration(e.target.value)} placeholder="30"
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = primary}
+                  onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Calendar date */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CalendarDays size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
+              style={{ ...inputStyle, width: 'auto', flex: 1, colorScheme: 'dark' }}
+              onFocus={e => e.target.style.borderColor = primary}
+              onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {language === 'en' ? 'Calendar date' : 'Data no calendário'}
+            </span>
+          </div>
+
+          {/* Repeat toggle */}
+          <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-md)', borderRadius: 10, padding: 10 }}>
+            <button type="button"
+              onClick={() => { setEditRepeatEnabled(!editRepeatEnabled); if (editRepeatEnabled) setEditRepeatDays([]) }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: editRepeatEnabled ? primary : 'var(--text-dim)', fontFamily: 'inherit' }}
+            >
+              <span style={{ width: 34, height: 18, borderRadius: 9, flexShrink: 0, background: editRepeatEnabled ? primary : 'var(--border-md)', position: 'relative', transition: 'background 0.2s' }}>
+                <span style={{ position: 'absolute', top: 1, left: editRepeatEnabled ? 17 : 1, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              </span>
+              <span style={{ fontSize: 12, fontWeight: editRepeatEnabled ? 600 : 400 }}>
+                🔁 {language === 'en' ? 'Repeat weekly' : 'Repetir semanalmente'}
+              </span>
+            </button>
+            {editRepeatEnabled && (
+              <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5 }}>
+                {DAYS.map(day => {
+                  const active = editRepeatDays.includes(day.value)
+                  return (
+                    <button key={day.value} type="button"
+                      onClick={() => setEditRepeatDays(prev => active ? prev.filter(d => d !== day.value) : [...prev, day.value])}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '7px 2px', borderRadius: 8, border: 'none', background: active ? `color-mix(in srgb, var(--primary) 15%, transparent)` : 'var(--surface-2)', cursor: 'pointer', fontFamily: 'inherit', outline: active ? `2px solid color-mix(in srgb, var(--primary) 50%, transparent)` : 'none', outlineOffset: -1, transition: 'all 0.15s' }}
+                    >
+                      <span style={{ fontSize: 8, fontWeight: 600, color: active ? primary : 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'en' ? day.label_en : day.label_pt}</span>
+                      <span style={{ fontSize: 12 }}>{active ? '💪' : '😴'}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={cancelEdit}
+              style={{ fontSize: 13, color: 'var(--text-muted)', padding: '7px 14px', borderRadius: 9, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+              {t('workout.cancel')}
+            </button>
+            <button type="submit" disabled={saving}
+              style={{ fontSize: 13, background: primary, color: '#0a0a0a', fontWeight: 600, padding: '7px 14px', borderRadius: 9, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'inherit' }}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              {language === 'en' ? 'Save' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+        <style>{`@keyframes fadeSlideUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }`}</style>
+      </div>
+    )
   }
 
   return (
@@ -584,7 +768,10 @@ export default function Workout() {
                 {t('workout.pending')} ({pending.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {pending.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} cats={cats} primary={primary} sport={selectedSport} />)}
+                {pending.map(e => editingId === e.id
+                  ? <InlineEditForm key={e.id} />
+                  : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                )}
               </div>
             </div>
           )}
@@ -594,7 +781,10 @@ export default function Workout() {
                 {t('workout.completed')} ({completed.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {completed.map(e => <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} cats={cats} primary={primary} sport={selectedSport} />)}
+                {completed.map(e => editingId === e.id
+                  ? <InlineEditForm key={e.id} />
+                  : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                )}
               </div>
             </div>
           )}
