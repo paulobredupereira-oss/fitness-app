@@ -6,6 +6,9 @@ import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays, Pencil, Check } from 'lucide-react'
 
+// JS getDay() → weekday key ('dom'=0,'seg'=1,...,'sab'=6)
+const WEEKDAY_KEYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab']
+
 // ── Days of week ─────────────────────────────────────────────────────────────
 const DAYS = [
   { value: 'seg', label_pt: 'Seg', label_en: 'Mon' },
@@ -226,6 +229,7 @@ export default function Workout() {
   const [saving,           setSaving]           = useState(false)
   const [pendingOpen,      setPendingOpen]      = useState(true)
   const [completedOpen,    setCompletedOpen]    = useState(false)
+  const [restOpen,         setRestOpen]         = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -367,13 +371,30 @@ export default function Workout() {
     setEditingId(null)
   }
 
+  // Today's weekday key (e.g. 'seg', 'ter', ...)
+  const todayWeekday = WEEKDAY_KEYS[new Date().getDay()]
+
+  // Returns true if today is a training day for this exercise
+  const isTodayTraining = (ex) => {
+    if (!ex.repeat_days) return true // non-recurring → always a training day
+    try {
+      const days = JSON.parse(ex.repeat_days)
+      return days.includes(todayWeekday)
+    } catch { return true }
+  }
+
   // Map exercises so ExerciseCard sees the correct done state
   const sportExercisesEff = sportExercises.map(e => ({ ...e, done: getEffectiveDone(e) }))
-  const doneCount  = sportExercisesEff.filter(e => e.done).length
-  const pct        = sportExercisesEff.length > 0 ? Math.round((doneCount / sportExercisesEff.length) * 100) : 0
-  const pending    = sportExercisesEff.filter(e => !e.done)
-  const completed  = sportExercisesEff.filter(e => e.done)
-  const done       = doneCount
+
+  // Split: training vs rest day
+  const trainingExercises = sportExercisesEff.filter(e => isTodayTraining(e))
+  const restExercises     = sportExercisesEff.filter(e => !isTodayTraining(e))
+
+  const doneCount = trainingExercises.filter(e => e.done).length
+  const pct       = trainingExercises.length > 0 ? Math.round((doneCount / trainingExercises.length) * 100) : 0
+  const pending   = trainingExercises.filter(e => !e.done)
+  const completed = trainingExercises.filter(e => e.done)
+  const done      = doneCount
 
   const inputStyle = {
     width: '100%', boxSizing: 'border-box',
@@ -577,12 +598,12 @@ export default function Workout() {
       </div>
 
       {/* Stats for selected sport */}
-      {sportExercises.length > 0 && (
+      {trainingExercises.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
           {[
-            { val: done,                  label: t('workout.done')     },
-            { val: `${pct}%`,             label: t('workout.percent'), color: primary },
-            { val: sportExercises.length, label: t('workout.total')    },
+            { val: done,                     label: t('workout.done')     },
+            { val: `${pct}%`,                label: t('workout.percent'), color: primary },
+            { val: trainingExercises.length, label: t('workout.total')    },
           ].map(({ val, label, color }) => (
             <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: isMobile ? '18px 12px' : 16, textAlign: 'center' }}>
               <p style={{ fontSize: isMobile ? 26 : 22, fontWeight: 700, color: color || 'var(--text)', margin: 0 }}>{val}</p>
@@ -593,7 +614,7 @@ export default function Workout() {
       )}
 
       {/* Progress bar */}
-      {sportExercises.length > 0 && (
+      {trainingExercises.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -610,7 +631,7 @@ export default function Workout() {
         </div>
       )}
 
-      {/* ── Exercise section (like PhotoAlbum at bottom of Diet) ──────────── */}
+      {/* ── Exercise section ──────────────────────────────────────────────── */}
       <div style={{ marginTop: 32 }}>
         {/* Section header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -621,8 +642,8 @@ export default function Workout() {
               {language === 'en' ? 'Exercises' : 'Exercícios'}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-              {sportExercises.length > 0
-                ? `${sportExercises.length} ${language === 'en' ? 'exercise(s) today' : 'exercício(s) hoje'} · ${done} ${language === 'en' ? 'done' : 'feito(s)'}`
+              {trainingExercises.length > 0
+                ? `${trainingExercises.length} ${language === 'en' ? 'exercise(s) today' : 'exercício(s) hoje'} · ${done} ${language === 'en' ? 'done' : 'feito(s)'}`
                 : language === 'en' ? 'No exercises yet' : 'Nenhum exercício ainda'}
             </p>
           </div>
@@ -835,7 +856,7 @@ export default function Workout() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
           <Loader2 size={28} style={{ color: primary }} className="animate-spin" />
         </div>
-      ) : sportExercises.length === 0 && !showForm ? (
+      ) : trainingExercises.length === 0 && restExercises.length === 0 && !showForm ? (
         <div style={{
           border: '2px dashed var(--border-md)', borderRadius: 20,
           padding: '48px 0', textAlign: 'center', color: 'var(--text-muted)',
@@ -916,6 +937,60 @@ export default function Workout() {
                     ? <InlineEditForm key={e.id} />
                     : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} isMobile={isMobile} />
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Rest day accordion ── */}
+          {restExercises.length > 0 && (
+            <div style={{
+              border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden',
+              background: 'var(--surface)', opacity: 0.75,
+            }}>
+              <button
+                type="button"
+                onClick={() => setRestOpen(o => !o)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: isMobile ? '18px 16px' : '14px 16px',
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    😴 {language === 'en' ? 'Rest day' : 'Dia de folga'}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', background: 'var(--border-md)', borderRadius: 8, padding: '1px 7px' }}>
+                    {restExercises.length}
+                  </span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  style={{ color: 'var(--text-muted)', transform: restOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {restOpen && (
+                <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeSlideUp 0.18s ease' }}>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', padding: '4px 4px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>😴</span>
+                    {language === 'en'
+                      ? 'These exercises are scheduled for rest today. They will return on training days.'
+                      : 'Esses exercícios estão de folga hoje. Voltam nos dias de treino.'}
+                  </p>
+                  {restExercises.map(e => (
+                    <div key={e.id} style={{ position: 'relative', filter: 'grayscale(0.4)', opacity: 0.7 }}>
+                      <ExerciseCard exercise={e} onToggle={() => {}} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary="#64748b" sport={selectedSport} isMobile={isMobile} />
+                      <div style={{
+                        position: 'absolute', top: 10, right: 10,
+                        fontSize: 10, fontWeight: 700, color: '#64748b',
+                        background: 'rgba(100,116,139,0.15)', border: '1px solid rgba(100,116,139,0.3)',
+                        padding: '2px 7px', borderRadius: 6,
+                      }}>
+                        😴 {language === 'en' ? 'rest' : 'folga'}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
