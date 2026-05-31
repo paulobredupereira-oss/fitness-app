@@ -79,7 +79,7 @@ const sportPlaceholders = {
 }
 
 // ── Exercise card ─────────────────────────────────────────────────────────────
-function ExerciseCard({ exercise, onToggle, onDelete, onEdit, cats, primary, sport }) {
+function ExerciseCard({ exercise, onToggle, onDelete, onEdit, cats, primary, sport, isMobile }) {
   const [deleting, setDeleting] = useState(false)
   const isGym = sport === 'academia'
   const cat = isGym ? (cats.find(c => c.value === exercise.category) || cats[8]) : null
@@ -87,9 +87,10 @@ function ExerciseCard({ exercise, onToggle, onDelete, onEdit, cats, primary, spo
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 12, padding: 16,
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: isMobile ? 18 : 16,
       borderRadius: 14, border: `1px solid ${exercise.done ? 'var(--border)' : 'var(--border-md)'}`,
-      background: exercise.done ? 'transparent' : 'var(--surface)',
+      background: exercise.done ? 'transparent' : 'var(--input-bg)',
       opacity: exercise.done ? 0.55 : 1,
       transition: 'all 0.2s',
     }}>
@@ -189,6 +190,13 @@ export default function Workout() {
   const { language, primary } = useSettings()
   const t = getT(language)
   const cats = categories[language] || categories.pt
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', h)
+    return () => window.removeEventListener('resize', h)
+  }, [])
 
   const [exercises, setExercises]       = useState([])
   const [loading, setLoading]           = useState(true)
@@ -489,7 +497,13 @@ export default function Workout() {
       </div>
 
       {/* Sport selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, auto)',
+        gap: isMobile ? 8 : 8,
+        marginBottom: 24,
+        ...(isMobile ? {} : { display: 'flex', overflowX: 'auto', paddingBottom: 4 }),
+      }}>
         {SPORTS.map(sport => {
           const active = selectedSport === sport.value
           const label  = language === 'en' ? sport.label_en : sport.label_pt
@@ -499,25 +513,34 @@ export default function Workout() {
               key={sport.value}
               onClick={() => { setSelectedSport(sport.value); setShowForm(false) }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                padding: '8px 14px', borderRadius: 12, border: 'none',
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: 'center',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+                gap: isMobile ? 4 : 7,
+                padding: isMobile ? '14px 8px' : '8px 14px',
+                borderRadius: 14, border: 'none',
                 background: active ? primary : 'var(--surface)',
                 color: active ? '#fff' : 'var(--text-dim)',
-                fontSize: 13, fontWeight: active ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-                boxShadow: active ? `0 4px 14px color-mix(in srgb, var(--primary) 30%, transparent)` : `0 0 0 1px var(--border)`,
+                fontSize: isMobile ? 11.5 : 13,
+                fontWeight: active ? 600 : 400,
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: active
+                  ? `0 4px 14px color-mix(in srgb, var(--primary) 30%, transparent)`
+                  : `0 0 0 1px var(--border)`,
                 transition: 'all 0.18s',
+                ...(isMobile ? {} : { flexShrink: 0 }),
               }}
             >
-              <span style={{ fontSize: 16 }}>{sport.emoji}</span>
-              {label}
+              <span style={{ fontSize: isMobile ? 24 : 16 }}>{sport.emoji}</span>
+              <span>{label}</span>
               {count > 0 && (
                 <span style={{
-                  fontSize: 10.5, fontWeight: 700, minWidth: 18, height: 18,
-                  borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 700, minWidth: 16, height: 16,
+                  borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: active ? 'rgba(255,255,255,0.25)' : `color-mix(in srgb, var(--primary) 15%, transparent)`,
                   color: active ? '#fff' : primary,
-                  padding: '0 5px',
+                  padding: '0 4px',
                 }}>
                   {count}
                 </span>
@@ -529,15 +552,15 @@ export default function Workout() {
 
       {/* Stats for selected sport */}
       {sportExercises.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
           {[
             { val: done,                  label: t('workout.done')     },
             { val: `${pct}%`,             label: t('workout.percent'), color: primary },
             { val: sportExercises.length, label: t('workout.total')    },
           ].map(({ val, label, color }) => (
-            <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 16, textAlign: 'center' }}>
-              <p style={{ fontSize: 22, fontWeight: 700, color: color || 'var(--text)', margin: 0 }}>{val}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
+            <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: isMobile ? '18px 12px' : 16, textAlign: 'center' }}>
+              <p style={{ fontSize: isMobile ? 26 : 22, fontWeight: 700, color: color || 'var(--text)', margin: 0 }}>{val}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{label}</p>
             </div>
           ))}
         </div>
@@ -808,7 +831,8 @@ export default function Workout() {
                 onClick={() => setPendingOpen(o => !o)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  padding: isMobile ? '18px 16px' : '14px 16px',
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -828,7 +852,7 @@ export default function Workout() {
                 <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeSlideUp 0.18s ease' }}>
                   {pending.map(e => editingId === e.id
                     ? <InlineEditForm key={e.id} />
-                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} isMobile={isMobile} />
                   )}
                 </div>
               )}
@@ -843,7 +867,8 @@ export default function Workout() {
                 onClick={() => setCompletedOpen(o => !o)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  padding: isMobile ? '18px 16px' : '14px 16px',
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -863,7 +888,7 @@ export default function Workout() {
                 <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeSlideUp 0.18s ease' }}>
                   {completed.map(e => editingId === e.id
                     ? <InlineEditForm key={e.id} />
-                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} />
+                    : <ExerciseCard key={e.id} exercise={e} onToggle={toggleExercise} onDelete={deleteExercise} onEdit={startEdit} cats={cats} primary={primary} sport={selectedSport} isMobile={isMobile} />
                   )}
                 </div>
               )}
