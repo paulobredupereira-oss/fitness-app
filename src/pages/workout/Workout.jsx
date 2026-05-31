@@ -468,23 +468,14 @@ export default function Workout() {
   return (
     <Layout>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-            <Dumbbell style={{ color: primary }} size={26} />
-            {t('workout.title')}
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-            {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: primary, color: '#0a0a0a', fontSize: 13.5, fontWeight: 600, padding: '9px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          <Plus size={16} />
-          {t('workout.addExercise')}
-        </button>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+          <Dumbbell style={{ color: primary }} size={26} />
+          {t('workout.title')}
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
+          {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
       </div>
 
       {/* Sport selector */}
@@ -559,6 +550,39 @@ export default function Workout() {
           {pct === 100 && <div style={{ fontSize: 22 }} className="animate-bounce">🔥</div>}
         </div>
       )}
+
+      {/* ── Exercise section (like PhotoAlbum at bottom of Diet) ──────────── */}
+      <div style={{ marginTop: 32 }}>
+        {/* Section header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Dumbbell size={17} style={{ color: primary }} />
+              {SPORTS.find(s => s.value === selectedSport)?.emoji}{' '}
+              {language === 'en' ? 'Exercises' : 'Exercícios'}
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+              {sportExercises.length > 0
+                ? `${sportExercises.length} ${language === 'en' ? 'exercise(s) today' : 'exercício(s) hoje'} · ${done} ${language === 'en' ? 'done' : 'feito(s)'}`
+                : language === 'en' ? 'No exercises yet' : 'Nenhum exercício ainda'}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'var(--surface-alt)', border: '1px solid var(--border-md)',
+              color: 'var(--text-dim)', fontSize: 13, fontWeight: 500,
+              padding: '8px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = primary; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = primary }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-alt)'; e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'var(--border-md)' }}
+          >
+            <Plus size={14} />
+            {t('workout.addExercise')}
+          </button>
+        </div>
 
       {/* Form */}
       {showForm && (
@@ -747,13 +771,16 @@ export default function Workout() {
         </div>
       )}
 
-      {/* List */}
+      {/* Exercise list */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
           <Loader2 size={28} style={{ color: primary }} className="animate-spin" />
         </div>
-      ) : sportExercises.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '56px 0', color: 'var(--text-muted)' }}>
+      ) : sportExercises.length === 0 && !showForm ? (
+        <div style={{
+          border: '2px dashed var(--border-md)', borderRadius: 20,
+          padding: '48px 0', textAlign: 'center', color: 'var(--text-muted)',
+        }}>
           <span style={{ fontSize: 44, display: 'block', marginBottom: 12 }}>
             {SPORTS.find(s => s.value === selectedSport)?.emoji}
           </span>
@@ -790,6 +817,10 @@ export default function Workout() {
           )}
         </div>
       )}
+
+      </div>{/* end exercise section */}
+
+      <style>{`@keyframes fadeSlideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </Layout>
   )
 }
