@@ -4,6 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { User, CheckSquare, Flame, BarChart2, Loader2, Dumbbell, Utensils, CalendarDays, TrendingUp } from 'lucide-react'
+import { calcWorkoutStreak } from '../../lib/workoutStreak'
 
 /* ── Same streak logic as Sidebar ──────────────────────────────── */
 function calcStreak(dates) {
@@ -60,9 +61,10 @@ export default function Profile() {
   const { primary, language } = useSettings()
   const isEn = language === 'en'
 
-  const [stats,   setStats]   = useState(null)
-  const [streak,  setStreak]  = useState({ current: 0, record: 0 })
-  const [loading, setLoading] = useState(true)
+  const [stats,          setStats]          = useState(null)
+  const [streak,         setStreak]         = useState({ current: 0, record: 0 })
+  const [workoutStreak,  setWorkoutStreak]  = useState(0)
+  const [loading,        setLoading]        = useState(true)
 
   const name     = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
   const initials = name.slice(0, 2).toUpperCase()
@@ -82,7 +84,7 @@ export default function Profile() {
 
     Promise.all([
       supabase.from('tasks').select('id, done, date').eq('user_id', uid),
-      supabase.from('workouts').select('id, date').eq('user_id', uid),
+      supabase.from('workouts').select('id, date, done, repeat_days, completed_dates').eq('user_id', uid),
       supabase.from('meals').select('id, date').eq('user_id', uid),
     ]).then(([tasksR, workoutsR, mealsR]) => {
       const allTasks    = tasksR.data    || []
@@ -114,6 +116,7 @@ export default function Profile() {
       })
 
       setStreak(calcStreak(allDates))
+      setWorkoutStreak(calcWorkoutStreak(allWorkouts))
       setLoading(false)
     })
   }, [user])
@@ -249,68 +252,81 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── Streak card ─────────────────────────────────────────── */}
-        <div style={cardStyle}>
+        {/* ── Workout Streak card ──────────────────────────────────── */}
+        <div style={{
+          ...cardStyle,
+          background: workoutStreak > 0
+            ? 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(234,88,12,0.06))'
+            : cardStyle.background,
+          borderColor: workoutStreak > 0 ? 'rgba(251,146,60,0.3)' : cardStyle.borderColor,
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(251,146,60,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Flame size={17} style={{ color: '#fb923c' }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dim)' }}>
-              {isEn ? 'Activity Streak' : 'Sequência de Atividade'}
+              {isEn ? 'Workout Streak' : 'Sequência de Treinos'}
             </span>
           </div>
 
-          {/* Current streak */}
-          <div style={{ marginBottom: 14 }}>
-            <span style={{ fontSize: 44, fontWeight: 800, color: streak.current > 0 ? '#fb923c' : 'var(--text-faint)', letterSpacing: '-0.04em', lineHeight: 1 }}>
-              {streak.current}
+          {/* Big fire + number */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <span style={{
+              fontSize: 44, lineHeight: 1,
+              filter: workoutStreak > 0 ? 'drop-shadow(0 0 12px rgba(251,146,60,0.6))' : 'none',
+            }}>
+              🔥
             </span>
-            <span style={{ fontSize: 14, color: 'var(--text-muted)', marginLeft: 6 }}>
-              {isEn ? 'days' : 'dias'}
-            </span>
+            <div>
+              <span style={{
+                fontSize: 44, fontWeight: 900,
+                color: workoutStreak > 0 ? '#fb923c' : 'var(--text-faint)',
+                letterSpacing: '-0.05em', lineHeight: 1,
+              }}>
+                {workoutStreak}
+              </span>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)', marginLeft: 6 }}>
+                {isEn ? 'days' : 'dias'}
+              </span>
+            </div>
           </div>
 
-          {/* Streak detail */}
+          {/* Status + general streak comparison */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                {isEn ? 'Status' : 'Status'}
-              </span>
+              <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Status</span>
               <span style={{
                 fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                background: streak.current > 0 ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.05)',
-                color: streak.current > 0 ? '#fb923c' : 'var(--text-faint)',
-                border: `1px solid ${streak.current > 0 ? 'rgba(251,146,60,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                background: workoutStreak > 0 ? 'rgba(251,146,60,0.15)' : 'var(--border)',
+                color: workoutStreak > 0 ? '#fb923c' : 'var(--text-faint)',
+                border: `1px solid ${workoutStreak > 0 ? 'rgba(251,146,60,0.3)' : 'transparent'}`,
               }}>
-                {streak.current > 0
-                  ? (isEn ? '🔥 Active' : '🔥 Ativa')
-                  : (isEn ? 'Inactive' : 'Inativa')}
+                {workoutStreak > 0 ? (isEn ? '🔥 Active' : '🔥 Ativa') : (isEn ? 'Start training!' : 'Comece a treinar!')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
-                {isEn ? 'Personal record' : 'Recorde pessoal'}
+                {isEn ? 'Activity streak' : 'Sequência geral'}
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-dim)' }}>
-                {streak.record} {isEn ? 'days' : 'dias'}
+                {streak.current} {isEn ? 'days' : 'dias'}
               </span>
             </div>
 
-            {/* Visual streak bars */}
+            {/* Visual bars for workout streak */}
             <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
-              {Array.from({ length: 7 }).map((_, i) => {
-                const active = i < Math.min(streak.current, 7)
-                return (
-                  <div key={i} style={{
-                    flex: 1, height: 5, borderRadius: 3,
-                    background: active ? '#fb923c' : 'var(--border-md)',
-                    transition: 'background 0.3s',
-                  }} />
-                )
-              })}
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} style={{
+                  flex: 1, height: 6, borderRadius: 3,
+                  background: i < Math.min(workoutStreak, 7)
+                    ? `rgba(251,146,60,${0.4 + (i / 7) * 0.6})`
+                    : 'var(--border-md)',
+                  transition: 'background 0.3s',
+                }} />
+              ))}
             </div>
             <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>
-              {isEn ? 'Last 7 days' : 'Últimos 7 dias'}
+              {isEn ? 'Consecutive training days' : 'Dias de treino consecutivos'}
             </span>
           </div>
         </div>

@@ -5,6 +5,8 @@ import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { Dumbbell, Plus, Trash2, CheckCircle2, Circle, Loader2, Zap, Clock, Repeat, MapPin, CalendarDays, Pencil, Check } from 'lucide-react'
+import { calcWorkoutStreak } from '../../lib/workoutStreak'
+import StreakAnimation from '../../components/ui/StreakAnimation'
 
 // JS getDay() → weekday key ('dom'=0,'seg'=1,...,'sab'=6)
 const WEEKDAY_KEYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab']
@@ -230,6 +232,8 @@ export default function Workout() {
   const [pendingOpen,      setPendingOpen]      = useState(true)
   const [completedOpen,    setCompletedOpen]    = useState(false)
   const [restOpen,         setRestOpen]         = useState(false)
+  const [workoutStreak,    setWorkoutStreak]    = useState(0)
+  const [showStreakAnim,   setShowStreakAnim]   = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
   const cfg   = sportFormConfig[selectedSport]
@@ -253,6 +257,29 @@ export default function Workout() {
   }
 
   useEffect(() => { if (user) fetchExercises() }, [user])
+
+  // Fetch all workouts for streak calculation + show animation on first visit today
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('workouts')
+      .select('date, done, repeat_days, completed_dates')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        const streak = calcWorkoutStreak(data || [])
+        setWorkoutStreak(streak)
+
+        // Show animation once per day when streak >= 2 (truly consecutive)
+        if (streak >= 2) {
+          const key = 'fl-streak-anim-date'
+          const lastShown = localStorage.getItem(key)
+          if (lastShown !== today) {
+            localStorage.setItem(key, today)
+            setTimeout(() => setShowStreakAnim(true), 600) // slight delay after page load
+          }
+        }
+      })
+  }, [user])
 
   // Filter by selected sport (null/undefined defaults to 'academia')
   const sportExercises = exercises.filter(e => (e.sport || 'academia') === selectedSport)
@@ -640,6 +667,19 @@ export default function Workout() {
               <Dumbbell size={17} style={{ color: primary }} />
               {SPORTS.find(s => s.value === selectedSport)?.emoji}{' '}
               {language === 'en' ? 'Exercises' : 'Exercícios'}
+              {workoutStreak > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                  fontSize: 12, fontWeight: 700,
+                  color: '#fb923c',
+                  background: 'rgba(251,146,60,0.12)',
+                  border: '1px solid rgba(251,146,60,0.3)',
+                  padding: '2px 8px', borderRadius: 20,
+                  filter: 'drop-shadow(0 0 6px rgba(251,146,60,0.4))',
+                }}>
+                  🔥 {workoutStreak}
+                </span>
+              )}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
               {trainingExercises.length > 0
@@ -1001,6 +1041,14 @@ export default function Workout() {
       </div>{/* end exercise section */}
 
       <style>{`@keyframes fadeSlideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* Streak animation overlay */}
+      {showStreakAnim && (
+        <StreakAnimation
+          streak={workoutStreak}
+          onDone={() => setShowStreakAnim(false)}
+        />
+      )}
     </Layout>
   )
 }
