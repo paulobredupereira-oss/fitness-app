@@ -340,14 +340,22 @@ export default function Workout() {
 
   const toggleExercise = async (ex) => {
     if (ex.repeat_days) {
-      // Recurring: toggle today's date in completed_dates
+      // Recurring: try to use completed_dates (per-day tracking)
       let dates = []
       try { dates = JSON.parse(ex.completed_dates || '[]') } catch {}
       const isToday = dates.includes(today)
       const newDates = isToday ? dates.filter(d => d !== today) : [...dates, today]
-      const { data } = await supabase.from('workouts')
+
+      let { data, error } = await supabase.from('workouts')
         .update({ completed_dates: JSON.stringify(newDates) })
         .eq('id', ex.id).select().single()
+
+      if (error) {
+        // completed_dates column missing — fall back to done boolean
+        ;({ data } = await supabase.from('workouts')
+          .update({ done: !ex.done })
+          .eq('id', ex.id).select().single())
+      }
       if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
     } else {
       // Regular workout: toggle done boolean
