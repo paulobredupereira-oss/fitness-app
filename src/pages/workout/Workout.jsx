@@ -264,16 +264,9 @@ export default function Workout() {
       setExercises(exData || [])
       setLoading(false)
 
-      // Streak — show animation immediately when ready
+      // Streak — just store the value, animation is triggered on toggle
       const streak = calcWorkoutStreak(streakRes.data || [])
       setWorkoutStreak(streak)
-      if (streak >= 1) {
-        const key = 'fl-streak-anim-date'
-        if (localStorage.getItem(key) !== today) {
-          localStorage.setItem(key, today)
-          setShowStreakAnim(true)
-        }
-      }
     }
     load()
   }, [user])
@@ -336,8 +329,9 @@ export default function Workout() {
   }
 
   const toggleExercise = async (ex) => {
+    const markingDone = !ex.done  // true = user is marking as done right now
+
     if (ex.repeat_days) {
-      // Recurring: try to use completed_dates (per-day tracking)
       let dates = []
       try { dates = JSON.parse(ex.completed_dates || '[]') } catch {}
       const isToday = dates.includes(today)
@@ -348,18 +342,25 @@ export default function Workout() {
         .eq('id', ex.id).select().single()
 
       if (error) {
-        // completed_dates column missing — fall back to done boolean
         ;({ data } = await supabase.from('workouts')
           .update({ done: !ex.done })
           .eq('id', ex.id).select().single())
       }
       if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
     } else {
-      // Regular workout: toggle done boolean
       const { data } = await supabase.from('workouts')
         .update({ done: !ex.done })
         .eq('id', ex.id).select().single()
       if (data) setExercises(prev => prev.map(e => e.id === ex.id ? data : e))
+    }
+
+    // Show streak animation on first "done" click of the day
+    if (markingDone) {
+      const key = 'fl-streak-anim-date'
+      if (localStorage.getItem(key) !== today) {
+        localStorage.setItem(key, today)
+        setShowStreakAnim(true)
+      }
     }
   }
 
