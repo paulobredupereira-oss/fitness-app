@@ -239,46 +239,43 @@ export default function Workout() {
   const cfg   = sportFormConfig[selectedSport]
   const ph    = sportPlaceholders[language]?.[selectedSport] || sportPlaceholders.pt[selectedSport]
 
-  const fetchExercises = async () => {
-    // Fetch today's workouts + recurring ones (repeat_days set)
-    let { data, error } = await supabase
-      .from('workouts').select('*')
-      .eq('user_id', user.id)
-      .or(`date.eq.${today},repeat_days.not.is.null`)
-      .order('created_at', { ascending: true })
-    if (error) {
-      // repeat_days column may not exist yet — fall back to today only
-      ;({ data } = await supabase.from('workouts').select('*')
-        .eq('user_id', user.id).eq('date', today)
-        .order('created_at', { ascending: true }))
-    }
-    setExercises(data || [])
-    setLoading(false)
-  }
-
-  useEffect(() => { if (user) fetchExercises() }, [user])
-
-  // Fetch all workouts for streak calculation + show animation on first visit today
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('workouts')
-      .select('date, done, repeat_days, completed_dates')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
-        const streak = calcWorkoutStreak(data || [])
-        setWorkoutStreak(streak)
+    const load = async () => {
+      // Run both queries in parallel — exercises + all workouts for streak
+      const [exercisesRes, streakRes] = await Promise.all([
+        supabase.from('workouts').select('*')
+          .eq('user_id', user.id)
+          .or(`date.eq.${today},repeat_days.not.is.null`)
+          .order('created_at', { ascending: true }),
+        supabase.from('workouts')
+          .select('date, done, repeat_days, completed_dates')
+          .eq('user_id', user.id),
+      ])
 
-        // Show animation once per day when streak >= 1
-        if (streak >= 1) {
-          const key = 'fl-streak-anim-date'
-          const lastShown = localStorage.getItem(key)
-          if (lastShown !== today) {
-            localStorage.setItem(key, today)
-            setTimeout(() => setShowStreakAnim(true), 600) // slight delay after page load
-          }
+      // Exercises — fall back if repeat_days column missing
+      let exData = exercisesRes.data
+      if (exercisesRes.error) {
+        const fallback = await supabase.from('workouts').select('*')
+          .eq('user_id', user.id).eq('date', today)
+          .order('created_at', { ascending: true })
+        exData = fallback.data
+      }
+      setExercises(exData || [])
+      setLoading(false)
+
+      // Streak — show animation immediately when ready
+      const streak = calcWorkoutStreak(streakRes.data || [])
+      setWorkoutStreak(streak)
+      if (streak >= 1) {
+        const key = 'fl-streak-anim-date'
+        if (localStorage.getItem(key) !== today) {
+          localStorage.setItem(key, today)
+          setShowStreakAnim(true)
         }
-      })
+      }
+    }
+    load()
   }, [user])
 
   // Filter by selected sport (null/undefined defaults to 'academia')
