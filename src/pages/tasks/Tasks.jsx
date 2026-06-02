@@ -4,7 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2, CalendarDays } from 'lucide-react'
+import { CheckSquare, Plus, Trash2, Flag, Circle, CheckCircle2, Loader2, CalendarDays, GripVertical } from 'lucide-react'
 
 function getPriorities(t) {
   return [
@@ -14,19 +14,32 @@ function getPriorities(t) {
   ]
 }
 
-function TaskItem({ task, onToggle, onDelete, priorities, primary }) {
+function TaskItem({ task, onToggle, onDelete, priorities, primary, dragHandleProps, isDragging, isDragOver }) {
   const [deleting, setDeleting] = useState(false)
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
   return (
     <div
-      className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
-        task.done
-          ? 'opacity-50 border-white/5 bg-white/[0.02]'
-          : 'bg-[#141414] border-white/10 hover:border-white/20'
-      }`}
+      {...dragHandleProps}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 14px', borderRadius: 12,
+        border: `1px solid ${isDragOver ? primary : task.done ? 'rgba(255,255,255,0.05)' : 'var(--border-md)'}`,
+        background: isDragOver
+          ? `color-mix(in srgb, var(--primary) 6%, var(--surface))`
+          : task.done ? 'rgba(255,255,255,0.02)' : 'var(--surface)',
+        opacity: isDragging ? 0.4 : task.done ? 0.55 : 1,
+        transition: 'border-color 0.15s, background 0.15s, opacity 0.15s',
+        cursor: task.done ? 'default' : 'grab',
+        boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.35)' : 'none',
+      }}
     >
-      <button onClick={() => onToggle(task)} className="flex-shrink-0 transition">
+      {/* Drag handle — only for pending */}
+      {!task.done && (
+        <GripVertical size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+      )}
+
+      <button onClick={() => onToggle(task)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         {task.done
           ? <CheckCircle2 size={22} style={{ color: primary, fill: `${primary}33` }} />
           : <Circle size={22} style={{ color: 'var(--text-faint)', transition: 'color 0.15s' }}
@@ -34,14 +47,20 @@ function TaskItem({ task, onToggle, onDelete, priorities, primary }) {
               onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />
         }
       </button>
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate ${task.done ? 'line-through text-white/30' : 'text-white/90'}`}>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13.5, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          color: task.done ? 'var(--text-muted)' : 'var(--text)',
+          textDecoration: task.done ? 'line-through' : 'none' }}>
           {task.title}
         </p>
         {task.description && (
-          <p className="text-xs text-white/30 mt-0.5 truncate">{task.description}</p>
+          <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {task.description}
+          </p>
         )}
       </div>
+
       {task.due_date && (
         <span style={{
           fontSize: 10, fontWeight: 600, color: 'rgba(100,180,255,0.9)',
@@ -53,13 +72,16 @@ function TaskItem({ task, onToggle, onDelete, priorities, primary }) {
           {new Date(task.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
         </span>
       )}
+
       <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${p.color} flex-shrink-0`}>
         {p.label}
       </span>
+
       <button
-        onClick={async () => { setDeleting(true); await onDelete(task.id) }}
+        onClick={async (e) => { e.stopPropagation(); setDeleting(true); await onDelete(task.id) }}
         disabled={deleting}
-        className="flex-shrink-0 text-white/20 hover:text-red-400 transition"
+        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }}
+        className="hover:text-red-400 transition"
       >
         {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
       </button>
@@ -73,24 +95,60 @@ export default function Tasks() {
   const t = getT(language)
   const priorities = getPriorities(t)
 
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
+  const [tasks,     setTasks]     = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [title,     setTitle]     = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState('media')
-  const [dueDate, setDueDate] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [showForm, setShowForm] = useState(false)
+  const [priority,  setPriority]  = useState('media')
+  const [dueDate,   setDueDate]   = useState('')
+  const [adding,    setAdding]    = useState(false)
+  const [showForm,  setShowForm]  = useState(false)
+  const [dragId,    setDragId]    = useState(null)   // id being dragged
+  const [dragOverId,setDragOverId]= useState(null)  // id currently hovered
 
-  const today = new Date().toISOString().split('T')[0]
+  const today   = new Date().toISOString().split('T')[0]
+  const orderKey = `fl-tasks-order-${today}`
+
+  // Apply localStorage sort order to fetched tasks
+  const applyOrder = (list) => {
+    try {
+      const ids = JSON.parse(localStorage.getItem(orderKey) || '[]')
+      if (!ids.length) return list
+      const map = Object.fromEntries(list.map(t => [t.id, t]))
+      const ordered = ids.map(id => map[id]).filter(Boolean)
+      list.forEach(t => { if (!ordered.find(o => o.id === t.id)) ordered.push(t) })
+      return ordered
+    } catch { return list }
+  }
+
+  const saveOrder = (list) =>
+    localStorage.setItem(orderKey, JSON.stringify(list.map(t => t.id)))
 
   const fetchTasks = async () => {
     const { data } = await supabase
       .from('tasks').select('*')
       .eq('user_id', user.id).eq('date', today)
       .order('created_at', { ascending: true })
-    setTasks(data || [])
+    setTasks(applyOrder(data || []))
     setLoading(false)
+  }
+
+  // ── Drag handlers ──────────────────────────────────────────────────────────
+  const onDragStart = (id) => setDragId(id)
+  const onDragOver  = (e, id) => { e.preventDefault(); setDragOverId(id) }
+  const onDragEnd   = () => { setDragId(null); setDragOverId(null) }
+
+  const onDrop = (targetId) => {
+    if (!dragId || dragId === targetId) { onDragEnd(); return }
+    const reordered = [...tasks]
+    const fromIdx = reordered.findIndex(t => t.id === dragId)
+    const toIdx   = reordered.findIndex(t => t.id === targetId)
+    if (fromIdx === -1 || toIdx === -1) { onDragEnd(); return }
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, moved)
+    setTasks(reordered)
+    saveOrder(reordered)
+    onDragEnd()
   }
 
   useEffect(() => { if (user) fetchTasks() }, [user])
@@ -253,9 +311,25 @@ export default function Tasks() {
               <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
                 {t('tasks.pending')} ({pending.length})
               </h3>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} primary={primary} />
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
+                    priorities={priorities}
+                    primary={primary}
+                    isDragging={dragId === task.id}
+                    isDragOver={dragOverId === task.id && dragId !== task.id}
+                    dragHandleProps={{
+                      draggable: true,
+                      onDragStart: () => onDragStart(task.id),
+                      onDragOver:  (e) => onDragOver(e, task.id),
+                      onDrop:      () => onDrop(task.id),
+                      onDragEnd:   onDragEnd,
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -265,9 +339,19 @@ export default function Tasks() {
               <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
                 {t('tasks.completed')} ({completed.length})
               </h3>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {completed.map(task => (
-                  <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} priorities={priorities} primary={primary} />
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
+                    priorities={priorities}
+                    primary={primary}
+                    isDragging={false}
+                    isDragOver={false}
+                    dragHandleProps={{}}
+                  />
                 ))}
               </div>
             </div>
