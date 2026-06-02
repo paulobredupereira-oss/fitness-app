@@ -1,7 +1,9 @@
 import { useSettings, ACCENTS } from '../../contexts/SettingsContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { getT } from '../../lib/i18n'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/layout/Layout'
-import { Settings as SettingsIcon, Check, Moon, Sun, Palette, Globe, HeadphonesIcon, MessageCircle } from 'lucide-react'
+import { Settings as SettingsIcon, Check, Moon, Sun, Palette, Globe, HeadphonesIcon, MessageCircle, LogOut } from 'lucide-react'
 
 /* ── Theme preview mini-card ─────────────────────────────────────────── */
 function ThemePreview({ isDark }) {
@@ -88,7 +90,14 @@ function Section({ icon: Icon, title, desc, children }) {
 
 export default function Settings() {
   const { theme, setTheme, accent, setAccent, language, setLanguage, primary, ACCENTS } = useSettings()
+  const { signOut } = useAuth()
+  const navigate    = useNavigate()
   const t = getT(language)
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
 
   const themeOptions = [
     {
@@ -259,6 +268,23 @@ export default function Settings() {
           (13) 99663-0625
         </a>
       </Section>
+
+      {/* ── Logout ─────────────────────────────────────────────── */}
+      <button
+        onClick={handleLogout}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '14px', borderRadius: 16, marginTop: 8,
+          background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.25)',
+          color: '#ef4444', fontSize: 14, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}
+      >
+        <LogOut size={18} />
+        {language === 'en' ? 'Sign out' : 'Sair da conta'}
+      </button>
     </Layout>
   )
 }
