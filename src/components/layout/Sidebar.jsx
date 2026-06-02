@@ -199,12 +199,17 @@ export default function Sidebar() {
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '8px 10px', borderRadius: 10, marginTop: 4,
       }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%',
-          background: primary, color: '#0a0a0a',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, flexShrink: 0,
-        }}>{initials}</div>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, overflow: 'hidden' }}>
+          {user?.user_metadata?.avatar_url
+            ? <img src={user.user_metadata.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <div style={{
+                width: '100%', height: '100%',
+                background: primary, color: '#0a0a0a',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700,
+              }}>{initials}</div>
+          }
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
           <div style={{ fontSize: 10.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>

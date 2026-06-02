@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
-import { User, CheckSquare, Flame, BarChart2, Loader2, Dumbbell, Utensils, CalendarDays, TrendingUp } from 'lucide-react'
+import { User, CheckSquare, Flame, BarChart2, Loader2, Dumbbell, Utensils, CalendarDays, TrendingUp, Camera } from 'lucide-react'
 import { calcWorkoutStreak } from '../../lib/workoutStreak'
 
 /* ── Same streak logic as Sidebar ──────────────────────────────── */
@@ -65,6 +65,9 @@ export default function Profile() {
   const [streak,         setStreak]         = useState({ current: 0, record: 0 })
   const [workoutStreak,  setWorkoutStreak]  = useState(0)
   const [loading,        setLoading]        = useState(true)
+  const [avatarUrl,      setAvatarUrl]      = useState(user?.user_metadata?.avatar_url || null)
+  const [uploading,      setUploading]      = useState(false)
+  const fileRef = useRef(null)
 
   const name     = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
   const initials = name.slice(0, 2).toUpperCase()
@@ -121,6 +124,37 @@ export default function Profile() {
     })
   }, [user])
 
+  /* ── Avatar upload ───────────────────────────────────────────── */
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Use JPG, PNG ou WEBP.')
+      return
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      alert('Imagem muito grande. Limite: 3MB.')
+      return
+    }
+    setUploading(true)
+    const ext  = file.name.split('.').pop()
+    const path = `${user.id}/avatar.${ext}`
+
+    // Remove old avatar first (ignore error if doesn't exist)
+    await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.webp`])
+
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { alert('Erro no upload: ' + upErr.message); setUploading(false); return }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    const urlWithBust = `${publicUrl}?t=${Date.now()}`
+
+    await supabase.auth.updateUser({ data: { avatar_url: urlWithBust } })
+    setAvatarUrl(urlWithBust)
+    setUploading(false)
+    e.target.value = ''
+  }
+
   /* ── Loading ──────────────────────────────────────────────────── */
   if (loading) {
     return (
@@ -156,16 +190,45 @@ export default function Profile() {
         display: 'flex', alignItems: 'center', gap: 20,
         flexWrap: 'wrap',
       }}>
-        {/* Avatar */}
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-          background: primary, color: '#0a0a0a',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em',
-          boxShadow: `0 0 0 4px ${primary}22, 0 4px 20px ${primary}35`,
-        }}>
-          {initials}
+        {/* Avatar — clickable to change photo */}
+        <div
+          onClick={() => !uploading && fileRef.current?.click()}
+          style={{
+            width: 80, height: 80, borderRadius: '50%', flexShrink: 0,
+            position: 'relative', cursor: 'pointer',
+            boxShadow: `0 0 0 4px ${primary}22, 0 4px 20px ${primary}35`,
+          }}
+        >
+          {avatarUrl
+            ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            : <div style={{
+                width: '100%', height: '100%', borderRadius: '50%',
+                background: primary, color: '#0a0a0a',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em',
+              }}>{initials}</div>
+          }
+
+          {/* Camera overlay */}
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: uploading ? 1 : 0,
+            transition: 'opacity 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => !uploading && (e.currentTarget.style.opacity = '0')}
+          >
+            {uploading
+              ? <Loader2 size={20} style={{ color: '#fff', animation: 'spin 0.75s linear infinite' }} />
+              : <Camera size={20} style={{ color: '#fff' }} />
+            }
+          </div>
         </div>
+
+        {/* Hidden file input */}
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} style={{ display: 'none' }} />
 
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
