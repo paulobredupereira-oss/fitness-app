@@ -269,8 +269,8 @@ export default function Workout() {
         const streak = calcWorkoutStreak(data || [])
         setWorkoutStreak(streak)
 
-        // Show animation once per day when streak >= 2 (truly consecutive)
-        if (streak >= 2) {
+        // Show animation once per day when streak >= 1
+        if (streak >= 1) {
           const key = 'fl-streak-anim-date'
           const lastShown = localStorage.getItem(key)
           if (lastShown !== today) {
