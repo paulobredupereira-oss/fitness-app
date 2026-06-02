@@ -20,7 +20,9 @@ function TaskItem({ task, onToggle, onDelete, priorities, primary, dragHandlePro
 
   return (
     <div
-      {...dragHandleProps}
+      onDragOver={dragHandleProps.onDragOver}
+      onDrop={dragHandleProps.onDrop}
+      onDragEnd={dragHandleProps.onDragEnd}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '12px 14px', borderRadius: 12,
@@ -30,13 +32,18 @@ function TaskItem({ task, onToggle, onDelete, priorities, primary, dragHandlePro
           : task.done ? 'rgba(255,255,255,0.02)' : 'var(--surface)',
         opacity: isDragging ? 0.4 : task.done ? 0.55 : 1,
         transition: 'border-color 0.15s, background 0.15s, opacity 0.15s',
-        cursor: task.done ? 'default' : 'grab',
         boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.35)' : 'none',
       }}
     >
-      {/* Drag handle — only for pending */}
+      {/* Grip handle — ONLY this element is draggable */}
       {!task.done && (
-        <GripVertical size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+        <span
+          draggable
+          onDragStart={dragHandleProps.onDragStart}
+          style={{ cursor: 'grab', color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '2px 0' }}
+        >
+          <GripVertical size={14} />
+        </span>
       )}
 
       <button onClick={() => onToggle(task)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
