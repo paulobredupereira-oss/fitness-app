@@ -33,7 +33,7 @@ export const i18n = {
       saved: 'Preferências salvas automaticamente',
     },
     tasks: {
-      title: 'Tarefas do Dia',
+      title: 'Tarefas',
       newTask: 'Nova tarefa',
       pending: 'Pendentes',
       completed: 'Concluídas',
