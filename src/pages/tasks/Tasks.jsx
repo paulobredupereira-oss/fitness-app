@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { localToday } from '../../lib/dateUtils'
+import { localToday, toLocalDateStr } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
@@ -148,11 +148,24 @@ export default function Tasks() {
     localStorage.setItem(orderKey, JSON.stringify(list.map(t => t.id)))
 
   const fetchTasks = async () => {
-    const { data } = await supabase
-      .from('tasks').select('*')
-      .eq('user_id', user.id).eq('date', today)
-      .order('created_at', { ascending: true })
-    setTasks(applyOrder(data || []))
+    // Fetch all tasks (pending from any day + completed from last 7 days)
+    const weekAgo = new Date(Date.now() - 7 * 864e5)
+    const weekAgoStr = toLocalDateStr(weekAgo)
+
+    const [pendingRes, completedRes] = await Promise.all([
+      supabase.from('tasks').select('*')
+        .eq('user_id', user.id)
+        .eq('done', false)
+        .order('date', { ascending: false }),
+      supabase.from('tasks').select('*')
+        .eq('user_id', user.id)
+        .eq('done', true)
+        .gte('date', weekAgoStr)
+        .order('date', { ascending: false }),
+    ])
+
+    const allTasks = [...(pendingRes.data || []), ...(completedRes.data || [])]
+    setTasks(applyOrder(allTasks))
     setLoading(false)
   }
 
@@ -221,10 +234,15 @@ export default function Tasks() {
     setSaving(false)
   }
 
-  const done      = tasks.filter(t => t.done).length
-  const pct       = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0
-  const pending   = tasks.filter(t => !t.done)
-  const completed = tasks.filter(t => t.done)
+  // Split tasks: today pending, overdue, completed
+  const todayPending = tasks.filter(t => !t.done && t.date === today)
+  const overdue      = tasks.filter(t => !t.done && t.date < today)
+  const completed    = tasks.filter(t => t.done)
+
+  // Stats (only today tasks count for progress)
+  const todayTotal = [...todayPending, ...completed.filter(c => c.date === today)].length
+  const todayDone  = completed.filter(c => c.date === today).length
+  const pct        = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0
 
   // ── Inline edit form ───────────────────────────────────────────────────────
   const InlineEditForm = () => (
@@ -402,13 +420,14 @@ export default function Tasks() {
         </div>
       ) : (
         <div className="space-y-4">
-          {pending.length > 0 && (
+          {/* Today's pending tasks */}
+          {todayPending.length > 0 && (
             <div>
               <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-                {t('tasks.pending')} ({pending.length})
+                {language === 'en' ? 'Today' : 'Hoje'} ({todayPending.length})
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {pending.map(task => editingId === task.id
+                {todayPending.map(task => editingId === task.id
                   ? <InlineEditForm key={task.id} />
                   : (
                   <TaskItem
@@ -432,6 +451,34 @@ export default function Tasks() {
               </div>
             </div>
           )}
+
+          {/* Overdue tasks */}
+          {overdue.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ fontSize: 11, fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                ⚠️ {language === 'en' ? 'Overdue' : 'Atrasadas'} ({overdue.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {overdue.map(task => editingId === task.id
+                  ? <InlineEditForm key={task.id} />
+                  : (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
+                    onEdit={startEdit}
+                    priorities={priorities}
+                    primary={primary}
+                    isDragging={false}
+                    isDragOver={false}
+                    dragHandleProps={{}}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {completed.length > 0 && (
             <div style={{ marginTop: 16 }}>
               <h3 style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
