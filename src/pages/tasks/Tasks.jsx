@@ -316,7 +316,7 @@ export default function Tasks() {
           onFocus={e => e.target.style.borderColor = primary}
           onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
         />
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {priorities.map(p => (
             <button key={p.value} type="button" onClick={() => setEditPrio(p.value)}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${editPrio === p.value ? p.color : 'border-white/10 text-white/40 hover:bg-white/5'}`}>
@@ -349,7 +349,7 @@ export default function Tasks() {
   )
 
   return (
-    <Layout>
+    <Layout style={{ overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
         <div style={{ width: isMobile ? '100%' : 'auto' }}>
@@ -378,25 +378,25 @@ export default function Tasks() {
 
       {/* Progress */}
       {tasks.length > 0 && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-dim)' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: isMobile ? 14 : 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20, maxWidth: '100%', boxSizing: 'border-box' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8 }}>
+              <span style={{ fontSize: isMobile ? 12 : 13.5, fontWeight: 500, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {todayDone} {t('tasks.of')} {todayTotal} {t('tasks.concluded')}
               </span>
-              <span style={{ color: primary, fontWeight: 600, fontSize: 14 }}>{pct}%</span>
+              <span style={{ color: primary, fontWeight: 600, fontSize: isMobile ? 13 : 14, flexShrink: 0 }}>{pct}%</span>
             </div>
-            <div style={{ background: 'var(--border-md)', borderRadius: 999, height: 7 }}>
+            <div style={{ background: 'var(--border-md)', borderRadius: 999, height: 7, width: '100%' }}>
               <div style={{ height: 7, background: primary, borderRadius: 999, width: `${pct}%`, transition: 'width 0.5s ease' }} />
             </div>
           </div>
-          {pct === 100 && <div style={{ fontSize: 24 }} className="animate-bounce">🏆</div>}
+          {pct === 100 && <div style={{ fontSize: isMobile ? 20 : 24, flexShrink: 0 }} className="animate-bounce">🏆</div>}
         </div>
       )}
 
       {/* Form */}
       {showForm && (
-        <div style={{ background: 'var(--surface)', border: `1px solid ${primary}33`, borderRadius: 20, padding: 20, marginBottom: 24 }}>
+        <div style={{ background: 'var(--surface)', border: `1px solid ${primary}33`, borderRadius: 20, padding: isMobile ? 14 : 20, marginBottom: 24, maxWidth: '100%', boxSizing: 'border-box' }}>
           <h3 style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 12 }}>{t('tasks.newLabel')}</h3>
           <form onSubmit={addTask} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input
