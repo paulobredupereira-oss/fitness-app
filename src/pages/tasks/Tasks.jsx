@@ -244,6 +244,12 @@ export default function Tasks() {
   const todayDone  = completed.filter(c => c.date === today).length
   const pct        = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0
 
+  const inputStyle = {
+    width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-md)',
+    color: 'var(--text)', borderRadius: 12, padding: '10px 12px', fontSize: 13.5,
+    outline: 'none', fontFamily: 'inherit',
+  }
+
   // ── Inline edit form ───────────────────────────────────────────────────────
   const InlineEditForm = () => (
     <div style={{ background: 'var(--surface)', border: `2px solid ${primary}55`, borderRadius: 14, padding: 14, animation: 'fadeSlideUp 0.18s ease' }}>
@@ -296,12 +302,6 @@ export default function Tasks() {
       <style>{`@keyframes fadeSlideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </div>
   )
-
-  const inputStyle = {
-    width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-md)',
-    color: 'var(--text)', borderRadius: 12, padding: '10px 12px', fontSize: 13.5,
-    outline: 'none', fontFamily: 'inherit',
-  }
 
   return (
     <Layout>
