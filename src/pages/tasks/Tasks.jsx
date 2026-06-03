@@ -15,10 +15,77 @@ function getPriorities(t) {
   ]
 }
 
-const TaskItem = memo(function TaskItem({ task, onToggle, onDelete, onEdit, priorities, primary, dragHandleProps, isDragging, isDragOver }) {
+const TaskItem = memo(function TaskItem({ task, onToggle, onDelete, onEdit, priorities, primary, dragHandleProps, isDragging, isDragOver, isMobile }) {
   const [deleting, setDeleting] = useState(false)
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
+  if (isMobile) {
+    // Mobile layout: stack elements vertically
+    return (
+      <div
+        onDragOver={dragHandleProps.onDragOver}
+        onDrop={dragHandleProps.onDrop}
+        onDragEnd={dragHandleProps.onDragEnd}
+        style={{
+          background: isDragOver ? `color-mix(in srgb, var(--primary) 6%, var(--surface))` : task.done ? 'rgba(255,255,255,0.02)' : 'var(--surface)',
+          border: `1px solid ${isDragOver ? primary : task.done ? 'rgba(255,255,255,0.05)' : 'var(--border-md)'}`,
+          borderRadius: 12, padding: '10px 12px',
+          opacity: isDragging ? 0.4 : task.done ? 0.55 : 1,
+          transition: 'border-color 0.15s, background 0.15s, opacity 0.15s',
+        }}
+      >
+        {/* Top row: checkbox + title + actions */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: task.description || task.due_date ? 6 : 0 }}>
+          {!task.done && (
+            <span draggable onDragStart={dragHandleProps.onDragStart} style={{ cursor: 'grab', color: 'var(--text-faint)', flexShrink: 0, padding: '2px 0' }}>
+              <GripVertical size={12} />
+            </span>
+          )}
+          <button onClick={() => onToggle(task)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            {task.done
+              ? <CheckCircle2 size={20} style={{ color: primary, fill: `${primary}33` }} />
+              : <Circle size={20} style={{ color: 'var(--text-faint)' }} />}
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: task.done ? 'var(--text-muted)' : 'var(--text)', textDecoration: task.done ? 'line-through' : 'none', wordBreak: 'break-word' }}>
+              {task.title}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            {!task.done && (
+              <button onClick={(e) => { e.stopPropagation(); onEdit(task) }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }}>
+                <Pencil size={13} />
+              </button>
+            )}
+            <button onClick={async (e) => { e.stopPropagation(); setDeleting(true); await onDelete(task.id) }} disabled={deleting} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }}>
+              {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+            </button>
+          </div>
+        </div>
+        {/* Bottom row: description, priority badge, due date */}
+        {(task.description || task.due_date) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginLeft: !task.done ? 36 : 28, alignItems: 'center' }}>
+            {task.description && (
+              <p style={{ fontSize: 11.5, color: 'var(--text-faint)', margin: 0, flex: '1 1 100%' }}>
+                {task.description}
+              </p>
+            )}
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${p.color}`} style={{ fontSize: 10 }}>
+              {p.label}
+            </span>
+            {task.due_date && (
+              <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(100,180,255,0.9)', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', padding: '2px 5px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CalendarDays size={9} />
+                {new Date(task.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Desktop layout: horizontal
   return (
     <div
       onDragOver={dragHandleProps.onDragOver}
@@ -28,38 +95,26 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete, onEdit, prio
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '12px 14px', borderRadius: 12,
         border: `1px solid ${isDragOver ? primary : task.done ? 'rgba(255,255,255,0.05)' : 'var(--border-md)'}`,
-        background: isDragOver
-          ? `color-mix(in srgb, var(--primary) 6%, var(--surface))`
-          : task.done ? 'rgba(255,255,255,0.02)' : 'var(--surface)',
+        background: isDragOver ? `color-mix(in srgb, var(--primary) 6%, var(--surface))` : task.done ? 'rgba(255,255,255,0.02)' : 'var(--surface)',
         opacity: isDragging ? 0.4 : task.done ? 0.55 : 1,
         transition: 'border-color 0.15s, background 0.15s, opacity 0.15s',
         boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.35)' : 'none',
       }}
     >
-      {/* Grip handle — ONLY this element is draggable */}
       {!task.done && (
-        <span
-          draggable
-          onDragStart={dragHandleProps.onDragStart}
-          style={{ cursor: 'grab', color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '2px 0' }}
-        >
+        <span draggable onDragStart={dragHandleProps.onDragStart} style={{ cursor: 'grab', color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center', padding: '2px 0' }}>
           <GripVertical size={14} />
         </span>
       )}
-
       <button onClick={() => onToggle(task)} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
         {task.done
           ? <CheckCircle2 size={22} style={{ color: primary, fill: `${primary}33` }} />
           : <Circle size={22} style={{ color: 'var(--text-faint)', transition: 'color 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.color = primary}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />
-        }
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'} />}
       </button>
-
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13.5, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          color: task.done ? 'var(--text-muted)' : 'var(--text)',
-          textDecoration: task.done ? 'line-through' : 'none' }}>
+        <p style={{ fontSize: 13.5, fontWeight: 500, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: task.done ? 'var(--text-muted)' : 'var(--text)', textDecoration: task.done ? 'line-through' : 'none' }}>
           {task.title}
         </p>
         {task.description && (
@@ -68,38 +123,21 @@ const TaskItem = memo(function TaskItem({ task, onToggle, onDelete, onEdit, prio
           </p>
         )}
       </div>
-
       {task.due_date && (
-        <span style={{
-          fontSize: 10, fontWeight: 600, color: 'rgba(100,180,255,0.9)',
-          background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)',
-          padding: '2px 6px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap',
-          display: 'flex', alignItems: 'center', gap: 3,
-        }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(100,180,255,0.9)', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', padding: '2px 6px', borderRadius: 6, flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3 }}>
           <CalendarDays size={10} />
           {new Date(task.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
         </span>
       )}
-
       <span className={`text-xs font-medium px-2 py-0.5 rounded-lg border ${p.color} flex-shrink-0`}>
         {p.label}
       </span>
-
       {!task.done && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit(task) }}
-          style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }}
-          className="hover:text-blue-400 transition"
-        >
+        <button onClick={(e) => { e.stopPropagation(); onEdit(task) }} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }} className="hover:text-blue-400 transition">
           <Pencil size={14} />
         </button>
       )}
-      <button
-        onClick={async (e) => { e.stopPropagation(); setDeleting(true); await onDelete(task.id) }}
-        disabled={deleting}
-        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }}
-        className="hover:text-red-400 transition"
-      >
+      <button onClick={async (e) => { e.stopPropagation(); setDeleting(true); await onDelete(task.id) }} disabled={deleting} style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-faint)' }} className="hover:text-red-400 transition">
         {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
       </button>
     </div>
@@ -451,6 +489,7 @@ export default function Tasks() {
                     onEdit={startEdit}
                     priorities={priorities}
                     primary={primary}
+                    isMobile={isMobile}
                     isDragging={dragId === task.id}
                     isDragOver={dragOverId === task.id && dragId !== task.id}
                     dragHandleProps={{
