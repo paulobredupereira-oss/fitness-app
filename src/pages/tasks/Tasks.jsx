@@ -336,7 +336,7 @@ export default function Tasks() {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-dim)' }}>
-                {done} {t('tasks.of')} {tasks.length} {t('tasks.concluded')}
+                {todayDone} {t('tasks.of')} {todayTotal} {t('tasks.concluded')}
               </span>
               <span style={{ color: primary, fontWeight: 600, fontSize: 14 }}>{pct}%</span>
             </div>
