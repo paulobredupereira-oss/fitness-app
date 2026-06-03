@@ -235,9 +235,9 @@ export default function Tasks() {
   }
 
   // Split tasks: today pending, overdue, completed
-  const todayPending = tasks.filter(t => !t.done && t.date === today)
-  const overdue      = tasks.filter(t => !t.done && t.date < today)
-  const completed    = tasks.filter(t => t.done)
+  const todayPending = tasks.filter(t => t && !t.done && t.date === today)
+  const overdue      = tasks.filter(t => t && !t.done && t.date && t.date < today)
+  const completed    = tasks.filter(t => t && t.done)
 
   // Stats (only today tasks count for progress)
   const todayTotal = [...todayPending, ...completed.filter(c => c.date === today)].length
