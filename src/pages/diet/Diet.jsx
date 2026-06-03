@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { localToday } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
@@ -187,7 +188,7 @@ export default function Diet() {
   const [mealType, setMealType] = useState('cafe')
   const [calories, setCalories] = useState('')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = localToday()
 
   const fetchMeals = async () => {
     const { data } = await supabase.from('meals').select('*')

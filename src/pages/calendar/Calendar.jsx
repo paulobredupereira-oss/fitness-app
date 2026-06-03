@@ -4,6 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
 import Layout from '../../components/layout/Layout'
 import { CalendarDays, ChevronLeft, ChevronRight, Circle, CheckCircle2, Dumbbell } from 'lucide-react'
+import { toLocalDateStr } from '../../lib/dateUtils'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MONTH_NAMES = {
@@ -47,7 +48,7 @@ export default function Calendar() {
   const [workoutsRecurring, setWorkoutsRecurring] = useState([]) // workouts with repeat_days
   const [loading, setLoading] = useState(true)
 
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = toLocalDateStr(now)
   const monthNames = MONTH_NAMES[language] || MONTH_NAMES.pt
   const dayNames   = DAY_SHORT[language]   || DAY_SHORT.pt
 

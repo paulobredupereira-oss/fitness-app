@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localToday, toLocalDateStr } from '../../lib/dateUtils'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
@@ -154,7 +155,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = localToday()
   const name = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Atleta'
 
   const getGreeting = () => {
@@ -182,7 +183,7 @@ export default function Dashboard() {
       const weekDates = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(weekStart)
         d.setDate(weekStart.getDate() + i)
-        return d.toISOString().split('T')[0]
+        return toLocalDateStr(d)
       })
 
       const [tasksRes, mealsRes, workoutsRes] = await Promise.all([

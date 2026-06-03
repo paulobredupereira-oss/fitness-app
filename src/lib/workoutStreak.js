@@ -1,3 +1,5 @@
+import { toLocalDateStr } from './dateUtils'
+
 // weekday abbreviation → JS Date.getDay() (0=Sun)
 const WD = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6 }
 
@@ -37,11 +39,11 @@ export function calcWorkoutStreak(workouts = []) {
   const hasRecurring = trainingWeekdays.size > 0
   const d = new Date()
   d.setHours(0, 0, 0, 0)
-  const todayStr = d.toISOString().split('T')[0]
+  const todayStr = toLocalDateStr(d)
   let streak = 0
 
   for (let i = 0; i < 365; i++) {
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = toLocalDateStr(d)
     const weekday = d.getDay()
 
     if (hasRecurring) {

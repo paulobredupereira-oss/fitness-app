@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
 import { supabase } from '../../lib/supabase'
+import { localToday, toLocalDateStr } from '../../lib/dateUtils'
 
 /* ── Streak calculation ─────────────────────────────────────────────── */
 /**
@@ -17,8 +18,8 @@ function calcStreak(dates) {
   // Deduplicate and sort newest → oldest
   const sorted = [...new Set(dates)].sort().reverse()
 
-  const today     = new Date().toISOString().split('T')[0]
-  const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0]
+  const today     = localToday()
+  const yesterday = toLocalDateStr(new Date(Date.now() - 864e5))
 
   // ── Current streak (must start from today or yesterday) ──────────
   let current = 0

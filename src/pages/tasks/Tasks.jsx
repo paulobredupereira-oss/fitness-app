@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localToday } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
@@ -128,7 +129,7 @@ export default function Tasks() {
   const [editDue,    setEditDue]    = useState('')
   const [saving,     setSaving]     = useState(false)
 
-  const today   = new Date().toISOString().split('T')[0]
+  const today   = localToday()
   const orderKey = `fl-tasks-order-${today}`
 
   // Apply localStorage sort order to fetched tasks

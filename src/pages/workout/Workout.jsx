@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localToday } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { getT } from '../../lib/i18n'
@@ -235,7 +236,7 @@ export default function Workout() {
   const [workoutStreak,    setWorkoutStreak]    = useState(0)
   const [showStreakAnim,   setShowStreakAnim]   = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = localToday()
   const cfg   = sportFormConfig[selectedSport]
   const ph    = sportPlaceholders[language]?.[selectedSport] || sportPlaceholders.pt[selectedSport]
 

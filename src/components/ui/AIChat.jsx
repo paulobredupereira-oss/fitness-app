@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Loader2, Bot, Zap, Dumbbell, CheckSquare } from
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
+import { localToday } from '../../lib/dateUtils'
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
 
@@ -38,7 +39,7 @@ function parseAction(text) {
 }
 
 async function executeAction(action, userId) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = localToday()
   if (action.type === 'create_workout') {
     const validCats = ['peito','costas','pernas','ombros','biceps','triceps','abdomen','cardio','outro']
     const rows = (action.exercises || []).map(ex => ({

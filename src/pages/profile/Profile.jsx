@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { localToday, toLocalDateStr } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
 import { supabase } from '../../lib/supabase'
@@ -10,8 +11,8 @@ import { calcWorkoutStreak } from '../../lib/workoutStreak'
 function calcStreak(dates) {
   if (!dates || dates.length === 0) return { current: 0, record: 0 }
   const sorted = [...new Set(dates)].sort().reverse()
-  const today     = new Date().toISOString().split('T')[0]
-  const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0]
+  const today     = localToday()
+  const yesterday = toLocalDateStr(new Date(Date.now() - 864e5))
 
   let current = 0
   if (sorted[0] === today || sorted[0] === yesterday) {
@@ -72,7 +73,7 @@ export default function Profile() {
   const name     = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'
   const initials = name.slice(0, 2).toUpperCase()
   const email    = user?.email || ''
-  const today    = new Date().toISOString().split('T')[0]
+  const today    = localToday()
 
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString(isEn ? 'en-US' : 'pt-BR', {
