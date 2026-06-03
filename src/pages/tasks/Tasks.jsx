@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, memo } from 'react'
 import { localToday, toLocalDateStr } from '../../lib/dateUtils'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettings } from '../../contexts/SettingsContext'
@@ -15,7 +15,7 @@ function getPriorities(t) {
   ]
 }
 
-function TaskItem({ task, onToggle, onDelete, onEdit, priorities, primary, dragHandleProps, isDragging, isDragOver }) {
+const TaskItem = memo(function TaskItem({ task, onToggle, onDelete, onEdit, priorities, primary, dragHandleProps, isDragging, isDragOver }) {
   const [deleting, setDeleting] = useState(false)
   const p = priorities.find(p => p.value === task.priority) || priorities[2]
 
@@ -104,7 +104,7 @@ function TaskItem({ task, onToggle, onDelete, onEdit, priorities, primary, dragH
       </button>
     </div>
   )
-}
+})
 
 export default function Tasks() {
   const { user } = useAuth()
@@ -203,24 +203,24 @@ export default function Tasks() {
     setShowForm(false); setAdding(false)
   }
 
-  const toggleTask = async (task) => {
+  const toggleTask = useCallback(async (task) => {
     const { data } = await supabase
       .from('tasks').update({ done: !task.done }).eq('id', task.id).select().single()
     if (data) setTasks(prev => prev.map(t => t.id === task.id ? data : t))
-  }
+  }, [])
 
-  const deleteTask = async (id) => {
+  const deleteTask = useCallback(async (id) => {
     await supabase.from('tasks').delete().eq('id', id)
     setTasks(prev => prev.filter(t => t.id !== id))
-  }
+  }, [])
 
-  const startEdit = (task) => {
+  const startEdit = useCallback((task) => {
     setEditingId(task.id)
     setEditTitle(task.title)
     setEditDesc(task.description || '')
     setEditPrio(task.priority || 'media')
     setEditDue(task.due_date || '')
-  }
+  }, [])
 
   const saveEdit = async (e) => {
     e.preventDefault()
