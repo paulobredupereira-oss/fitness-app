@@ -62,7 +62,7 @@ export default function StreakAnimation({ streak, onDone }) {
           🔥
         </div>
 
-        {/* Counting number */}
+        {/* Rolling number with slot machine effect */}
         <div style={{
           fontSize: 96,
           fontWeight: 900,
@@ -74,8 +74,15 @@ export default function StreakAnimation({ streak, onDone }) {
           fontVariantNumeric: 'tabular-nums',
           minWidth: 120,
           display: 'inline-block',
+          height: 96,
+          overflow: 'hidden',
+          position: 'relative',
         }}>
-          {displayNum}
+          <div key={displayNum} style={{
+            animation: 'rollUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}>
+            {displayNum}
+          </div>
         </div>
 
         {/* "dia(s)" label */}
@@ -121,6 +128,10 @@ export default function StreakAnimation({ streak, onDone }) {
         @keyframes fireFlicker {
           from { transform: scale(1)    rotate(-4deg); filter: drop-shadow(0 0 28px rgba(251,146,60,0.9)) }
           to   { transform: scale(1.10) rotate(4deg);  filter: drop-shadow(0 0 48px rgba(234,88,12,1)) }
+        }
+        @keyframes rollUp {
+          from { transform: translateY(120%); opacity: 0 }
+          to   { transform: translateY(0); opacity: 1 }
         }
       `}</style>
     </div>
