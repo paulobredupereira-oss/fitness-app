@@ -66,6 +66,7 @@ export default function Profile() {
   const [streak,         setStreak]         = useState({ current: 0, record: 0 })
   const [workoutStreak,  setWorkoutStreak]  = useState(0)
   const [loading,        setLoading]        = useState(true)
+  const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768)
   const [avatarUrl,      setAvatarUrl]      = useState(user?.user_metadata?.avatar_url || null)
   const [uploading,      setUploading]      = useState(false)
   const fileRef = useRef(null)
@@ -80,6 +81,12 @@ export default function Profile() {
         day: '2-digit', month: 'long', year: 'numeric',
       })
     : null
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   /* ── Fetch all stats in parallel ─────────────────────────────── */
   useEffect(() => {
@@ -177,9 +184,9 @@ export default function Profile() {
   return (
     <Layout>
       {/* ── Page header ───────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-          <User style={{ color: primary }} size={26} />
+      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+          <User style={{ color: primary }} size={isMobile ? 24 : 26} />
           {isEn ? 'My Profile' : 'Meu Perfil'}
         </h1>
       </div>
@@ -188,16 +195,17 @@ export default function Profile() {
       <div style={{
         ...cardStyle,
         marginBottom: 20,
-        display: 'flex', alignItems: 'center', gap: 20,
-        flexWrap: 'wrap',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 20,
+        flexWrap: isMobile ? 'nowrap' : 'wrap',
+        flexDirection: isMobile ? 'row' : 'row',
       }}>
         {/* Avatar — clickable to change photo */}
         <div
           onClick={() => !uploading && fileRef.current?.click()}
           style={{
-            width: 80, height: 80, borderRadius: '50%', flexShrink: 0,
+            width: isMobile ? 64 : 80, height: isMobile ? 64 : 80, borderRadius: '50%', flexShrink: 0,
             position: 'relative', cursor: 'pointer',
-            boxShadow: `0 0 0 4px ${primary}22, 0 4px 20px ${primary}35`,
+            boxShadow: `0 0 0 ${isMobile ? 3 : 4}px ${primary}22, 0 ${isMobile ? 3 : 4}px ${isMobile ? 16 : 20}px ${primary}35`,
           }}
         >
           {avatarUrl
@@ -206,7 +214,7 @@ export default function Profile() {
                 width: '100%', height: '100%', borderRadius: '50%',
                 background: primary, color: '#0a0a0a',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em',
+                fontSize: isMobile ? 22 : 28, fontWeight: 800, letterSpacing: '-0.02em',
               }}>{initials}</div>
           }
 
@@ -233,13 +241,13 @@ export default function Profile() {
 
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <h2 style={{ fontSize: isMobile ? 17 : 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {name}
           </h2>
-          <p style={{ fontSize: 13.5, color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: isMobile ? 12 : 13.5, color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {email}
           </p>
-          {memberSince && (
+          {memberSince && !isMobile && (
             <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 5 }}>
               {isEn ? `Member since ${memberSince}` : `Membro desde ${memberSince}`}
             </p>
@@ -247,7 +255,7 @@ export default function Profile() {
         </div>
 
         {/* Active days badge */}
-        {stats && (
+        {stats && !isMobile && (
           <div style={{
             background: `${primary}15`, border: `1px solid ${primary}35`,
             borderRadius: 14, padding: '10px 16px', textAlign: 'center', flexShrink: 0,
@@ -262,8 +270,24 @@ export default function Profile() {
         )}
       </div>
 
+      {/* Mobile active days */}
+      {stats && isMobile && (
+        <div style={{
+          ...cardStyle,
+          marginBottom: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-dim)' }}>
+            {isEn ? 'Active days' : 'Dias ativos'}
+          </span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: primary }}>
+            {stats.activeDays}
+          </span>
+        </div>
+      )}
+
       {/* ── 2-column grid: Tasks card + Streak card ───────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="md:grid">
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
 
         {/* ── Completed Tasks card ────────────────────────────────── */}
         <div style={cardStyle}>

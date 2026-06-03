@@ -114,6 +114,7 @@ export default function Tasks() {
 
   const [tasks,     setTasks]     = useState([])
   const [loading,   setLoading]   = useState(true)
+  const [isMobile,  setIsMobile]  = useState(window.innerWidth < 768)
   const [title,     setTitle]     = useState('')
   const [description, setDescription] = useState('')
   const [priority,  setPriority]  = useState('media')
@@ -131,6 +132,12 @@ export default function Tasks() {
 
   const today   = localToday()
   const orderKey = `fl-tasks-order-${today}`
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Apply localStorage sort order to fetched tasks
   const applyOrder = (list) => {
@@ -306,10 +313,10 @@ export default function Tasks() {
   return (
     <Layout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CheckSquare style={{ color: primary }} size={26} />
+      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
+        <div style={{ width: isMobile ? '100%' : 'auto' }}>
+          <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CheckSquare style={{ color: primary }} size={isMobile ? 24 : 26} />
             {t('tasks.title')}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
@@ -319,10 +326,11 @@ export default function Tasks() {
         <button
           onClick={() => setShowForm(!showForm)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             background: primary, color: '#0a0a0a',
-            fontSize: 13.5, fontWeight: 600, padding: '9px 16px',
+            fontSize: 13.5, fontWeight: 600, padding: isMobile ? '10px' : '9px 16px',
             borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            width: isMobile ? '100%' : 'auto',
           }}
         >
           <Plus size={16} />
@@ -367,30 +375,35 @@ export default function Tasks() {
               onFocus={e => e.target.style.borderColor = primary}
               onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
             />
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               {priorities.map(p => (
                 <button key={p.value} type="button" onClick={() => setPriority(p.value)}
                   className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${
                     priority === p.value ? p.color : 'border-white/10 text-white/40 hover:bg-white/5'
-                  }`}>
+                  }`}
+                  style={{ flex: isMobile ? '1 1 auto' : 'none' }}>
                   <Flag size={12} />{p.label}
                 </button>
               ))}
             </div>
             {/* Optional calendar date */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CalendarDays size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-              <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                style={{ ...inputStyle, width: 'auto', flex: 1, colorScheme: 'dark' }}
-                onFocus={e => e.target.style.borderColor = primary}
-                onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
-              />
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                {language === 'en' ? 'Add to calendar (optional)' : 'Agendar no calendário (opcional)'}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: isMobile ? 'column' : 'row' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: isMobile ? '100%' : 'auto' }}>
+                <CalendarDays size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  style={{ ...inputStyle, width: isMobile ? '100%' : 'auto', flex: 1, colorScheme: 'dark' }}
+                  onFocus={e => e.target.style.borderColor = primary}
+                  onBlur={e => e.target.style.borderColor = 'var(--border-md)'}
+                />
+              </div>
+              {!isMobile && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  {language === 'en' ? 'Add to calendar (optional)' : 'Agendar no calendário (opcional)'}
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button type="button" onClick={() => setShowForm(false)}

@@ -31,6 +31,13 @@ export default function BMR() {
   const [weight,   setWeight]   = useState('')
   const [activity, setActivity] = useState('moderate')
   const [result,   setResult]   = useState(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   /* ── Load saved profile from localStorage ───────────────────── */
   useEffect(() => {
@@ -82,9 +89,9 @@ export default function BMR() {
   return (
     <Layout>
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-          <Activity style={{ color: primary }} size={26} />
+      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+          <Activity style={{ color: primary }} size={isMobile ? 24 : 26} />
           {isEn ? 'Basal Metabolic Rate' : 'Taxa Metabólica Basal'}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 5 }}>
@@ -94,7 +101,7 @@ export default function BMR() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: result ? '1fr 1fr' : '1fr', gap: 20 }} className="md:grid">
+      <div style={{ display: 'grid', gridTemplateColumns: (result && !isMobile) ? '1fr 1fr' : '1fr', gap: 20 }}>
 
         {/* ── Form card ──────────────────────────────────────────── */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -130,7 +137,7 @@ export default function BMR() {
           </div>
 
           {/* Age / Height / Weight */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
             {[
               { label: isEn ? 'Age'    : 'Idade',  unit: isEn ? 'yrs' : 'anos', val: age,    set: setAge,    ph: '25'  },
               { label: isEn ? 'Height' : 'Altura', unit: 'cm',                  val: height, set: setHeight, ph: '170' },
@@ -192,8 +199,8 @@ export default function BMR() {
         {result && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* BMR + TDEE tiles */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ background: 'var(--surface)', border: `1px solid ${primary}30`, borderRadius: 18, padding: '20px 18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+              <div style={{ background: 'var(--surface)', border: `1px solid ${primary}30`, borderRadius: 18, padding: isMobile ? '18px 16px' : '20px 18px' }}>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
                   🔥 {isEn ? 'BMR — at rest' : 'TMB — em repouso'}
                 </p>
@@ -204,7 +211,7 @@ export default function BMR() {
                   kcal / {isEn ? 'day' : 'dia'}
                 </p>
               </div>
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '20px 18px' }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: isMobile ? '18px 16px' : '20px 18px' }}>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 8px' }}>
                   ⚡ TDEE — {isEn ? act?.en.split('—')[0].trim() : act?.pt.split('—')[0].trim()}
                 </p>
@@ -262,8 +269,8 @@ export default function BMR() {
         )}
 
         {/* placeholder before first calc */}
-        {!result && (
-          <div style={{ background: 'var(--surface)', border: '1px dashed var(--border-md)', borderRadius: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12, color: 'var(--text-muted)' }} className="hidden md:flex">
+        {!result && !isMobile && (
+          <div style={{ background: 'var(--surface)', border: '1px dashed var(--border-md)', borderRadius: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12, color: 'var(--text-muted)' }}>
             <Activity size={40} style={{ opacity: 0.25 }} />
             <p style={{ textAlign: 'center', fontSize: 13, margin: 0 }}>
               {isEn ? 'Fill in your data and click "Calculate" to see your results here.'

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useSettings, ACCENTS } from '../../contexts/SettingsContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { getT } from '../../lib/i18n'
@@ -93,6 +94,13 @@ export default function Settings() {
   const { signOut } = useAuth()
   const navigate    = useNavigate()
   const t = getT(language)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleLogout = async () => {
     await signOut()
@@ -117,9 +125,9 @@ export default function Settings() {
   return (
     <Layout>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text, #fafafa)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-          <SettingsIcon style={{ color: primary }} size={26} />
+      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: 'var(--text, #fafafa)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+          <SettingsIcon style={{ color: primary }} size={isMobile ? 24 : 26} />
           {t('settings.title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted, rgba(250,250,250,0.4))', marginTop: 4 }}>
@@ -135,7 +143,7 @@ export default function Settings() {
           <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted, rgba(250,250,250,0.4))', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
             {t('settings.themeLabel')}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
             {themeOptions.map(({ key, icon: Icon, label, desc }) => {
               const active = theme === key
               return (
@@ -221,7 +229,7 @@ export default function Settings() {
 
       {/* ── Idioma / Language ──────────────────────────────────── */}
       <Section icon={Globe} title={t('settings.language')} desc={t('settings.languageDesc')}>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
           <LangCard
             flag="🇧🇷"
             label="Português"

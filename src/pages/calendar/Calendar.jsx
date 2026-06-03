@@ -42,6 +42,7 @@ export default function Calendar() {
   const [viewYear,  setViewYear]  = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const [selected,  setSelected]  = useState(null)
+  const [isMobile,  setIsMobile]  = useState(window.innerWidth < 768)
 
   const [tasks,            setTasks]            = useState([])
   const [workoutsDue,      setWorkoutsDue]      = useState([])   // workouts with due_date
@@ -59,6 +60,12 @@ export default function Calendar() {
 
   const dayStr = d =>
     `${viewYear}-${mm}-${String(d).padStart(2, '0')}`
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   /* ── Fetch all data for this month ──────────────────────────── */
   useEffect(() => {
@@ -170,9 +177,9 @@ export default function Calendar() {
   return (
     <Layout>
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-          <CalendarDays style={{ color: primary }} size={26} />
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+          <CalendarDays style={{ color: primary }} size={isMobile ? 24 : 26} />
           {isEn ? 'Calendar' : 'Calendário'}
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
@@ -181,7 +188,7 @@ export default function Calendar() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: isMobile ? 10 : 16, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { dot: '#ef4444', label: isEn ? 'High priority task' : 'Tarefa alta' },
           { dot: '#f59e0b', label: isEn ? 'Medium task' : 'Tarefa média' },
@@ -193,35 +200,35 @@ export default function Calendar() {
               width: 7, height: 7, background: dot, flexShrink: 0,
               borderRadius: square ? 2 : '50%',
             }} />
-            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{label}</span>
+            <span style={{ fontSize: isMobile ? 10.5 : 11.5, color: 'var(--text-muted)' }}>{label}</span>
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: '20px 16px', marginBottom: 20 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: isMobile ? 16 : 20, padding: isMobile ? '16px 12px' : '20px 16px', marginBottom: 20 }}>
         {/* Month nav */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 14 : 18 }}>
           {navBtn(prevMonth, <ChevronLeft size={17} />)}
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {monthNames[viewMonth]} {viewYear}
           </span>
           {navBtn(nextMonth, <ChevronRight size={17} />)}
         </div>
 
         {/* Day headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 1 : 2, marginBottom: 4 }}>
           {dayNames.map(d => (
             <div key={d} style={{
-              textAlign: 'center', fontSize: 10.5, fontWeight: 600,
+              textAlign: 'center', fontSize: isMobile ? 9.5 : 10.5, fontWeight: 600,
               color: 'var(--text-faint)', textTransform: 'uppercase',
-              letterSpacing: '0.05em', padding: '4px 0',
+              letterSpacing: '0.05em', padding: isMobile ? '2px 0' : '4px 0',
             }}>{d}</div>
           ))}
         </div>
 
         {/* Day cells */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 1 : 2 }}>
           {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e${i}`} />)}
 
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -231,7 +238,7 @@ export default function Calendar() {
             const hasItems = items.length > 0
 
             // Collect dots: tasks by priority color, workouts as square/primary
-            const dots = items.slice(0, 4).map(item =>
+            const dots = items.slice(0, isMobile ? 2 : 4).map(item =>
               item._type === 'task'
                 ? { color: PRIORITY_COLOR[item.priority] || primary, square: false }
                 : { color: sportOf(item).color, square: true }
@@ -242,9 +249,9 @@ export default function Calendar() {
                 key={day}
                 onClick={() => hasItems && setSelected(isSel ? null : day)}
                 style={{
-                  minHeight: 54,
-                  borderRadius: 10,
-                  padding: '7px 4px 5px',
+                  minHeight: isMobile ? 44 : 54,
+                  borderRadius: isMobile ? 8 : 10,
+                  padding: isMobile ? '6px 2px 4px' : '7px 4px 5px',
                   cursor: hasItems ? 'pointer' : 'default',
                   background: isSel
                     ? `color-mix(in srgb, var(--primary) 14%, transparent)`
@@ -257,9 +264,9 @@ export default function Calendar() {
                 }}
               >
                 <span style={{
-                  fontSize: 12.5, fontWeight: isToday ? 700 : 400,
+                  fontSize: isMobile ? 11 : 12.5, fontWeight: isToday ? 700 : 400,
                   color: isToday ? primary : isSel ? primary : 'var(--text-dim)',
-                  lineHeight: 1, width: 24, height: 24,
+                  lineHeight: 1, width: isMobile ? 20 : 24, height: isMobile ? 20 : 24,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   borderRadius: '50%',
                   background: isToday && !isSel ? `color-mix(in srgb, var(--primary) 18%, transparent)` : 'transparent',
@@ -268,17 +275,17 @@ export default function Calendar() {
                 </span>
 
                 {dots.length > 0 && (
-                  <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 32 }}>
+                  <div style={{ display: 'flex', gap: isMobile ? 1 : 2, flexWrap: 'wrap', justifyContent: 'center', maxWidth: isMobile ? 28 : 32 }}>
                     {dots.map((dot, di) => (
                       <div key={di} style={{
-                        width: 5, height: 5, flexShrink: 0,
+                        width: isMobile ? 4 : 5, height: isMobile ? 4 : 5, flexShrink: 0,
                         background: dot.color,
                         borderRadius: dot.square ? 1.5 : '50%',
                       }} />
                     ))}
-                    {items.length > 4 && (
-                      <span style={{ fontSize: 7.5, color: 'var(--text-faint)', lineHeight: 1 }}>
-                        +{items.length - 4}
+                    {items.length > (isMobile ? 2 : 4) && (
+                      <span style={{ fontSize: isMobile ? 6.5 : 7.5, color: 'var(--text-faint)', lineHeight: 1 }}>
+                        +{items.length - (isMobile ? 2 : 4)}
                       </span>
                     )}
                   </div>

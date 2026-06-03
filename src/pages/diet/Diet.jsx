@@ -137,23 +137,26 @@ function PhotoAlbum({ userId, today, t, primary }) {
           <p className="text-xs text-white/20 mt-1">{t('diet.noPhotosHint')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 3}, 1fr)`, gap: isMobile ? 10 : 12 }}>
           {photos.map(photo => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden aspect-square bg-white/5">
+            <div key={photo.id} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', aspectRatio: '1', background: 'rgba(255,255,255,0.05)' }} className="group">
               <img src={photo.url} alt="Refeição"
-                className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer', transition: 'transform 0.2s' }}
+                className="hover:scale-105"
                 onClick={() => setPreviewUrl(photo.url)}
               />
               <button onClick={() => deletePhoto(photo)}
-                className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', opacity: 0, transition: 'all 0.2s' }}
+                className="group-hover:opacity-100 hover:bg-red-500">
                 <X size={12} />
               </button>
             </div>
           ))}
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            className="aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-white/20 hover:border-[#ff4d2e]/50 hover:text-[#ff4d2e] transition disabled:opacity-50">
+            style={{ aspectRatio: '1', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', background: 'transparent', cursor: 'pointer', transition: 'all 0.2s' }}
+            className="hover:border-[#ff4d2e]/50 hover:text-[#ff4d2e] disabled:opacity-50">
             {uploading ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
-            <span className="text-xs mt-1">{uploading ? t('diet.uploading') : t('diet.photo')}</span>
+            <span style={{ fontSize: 11, marginTop: 4 }}>{uploading ? t('diet.uploading') : t('diet.photo')}</span>
           </button>
         </div>
       )}
@@ -183,12 +186,19 @@ export default function Diet() {
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [adding, setAdding] = useState(false)
   const [food, setFood] = useState('')
   const [mealType, setMealType] = useState('cafe')
   const [calories, setCalories] = useState('')
 
   const today = localToday()
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const fetchMeals = async () => {
     const { data } = await supabase.from('meals').select('*')
@@ -230,19 +240,18 @@ export default function Diet() {
   return (
     <Layout>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
-            <UtensilsCrossed style={{ color: P }} size={26} />
+      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
+        <div style={{ width: isMobile ? '100%' : 'auto' }}>
+          <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: 'rgba(250,250,250,0.9)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <UtensilsCrossed style={{ color: P }} size={isMobile ? 24 : 26} />
             {t('diet.title')}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p style={{ color: 'rgba(250,250,250,0.4)', fontSize: 13, marginTop: 4 }}>
             {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 text-black text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-          style={{ background: P }}>
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: P, color: '#0a0a0a', fontSize: 13.5, fontWeight: 600, padding: isMobile ? '10px' : '10px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', width: isMobile ? '100%' : 'auto' }}>
           <Plus size={16} />
           {t('diet.addMeal')}
         </button>
@@ -250,18 +259,18 @@ export default function Diet() {
 
       {/* Stats */}
       {meals.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-white/90">{done}</p>
-            <p className="text-xs text-white/40 mt-0.5">{t('diet.mealsDone')}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: isMobile ? 10 : 16, marginBottom: 24 }}>
+          <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', borderRadius: isMobile ? 16 : 20, padding: isMobile ? '16px 12px' : 16, textAlign: 'center' }}>
+            <p style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: 'rgba(250,250,250,0.9)', margin: 0 }}>{done}</p>
+            <p style={{ fontSize: 11, color: 'rgba(250,250,250,0.4)', marginTop: 4 }}>{t('diet.mealsDone')}</p>
           </div>
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold" style={{ color: P }}>{pct}%</p>
-            <p className="text-xs text-white/40 mt-0.5">{t('diet.dietFollowed')}</p>
+          <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', borderRadius: isMobile ? 16 : 20, padding: isMobile ? '16px 12px' : 16, textAlign: 'center' }}>
+            <p style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: P, margin: 0 }}>{pct}%</p>
+            <p style={{ fontSize: 11, color: 'rgba(250,250,250,0.4)', marginTop: 4 }}>{t('diet.dietFollowed')}</p>
           </div>
-          <div className="bg-[#141414] border border-white/8 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-bold text-orange-400">{totalCals > 0 ? totalCals : '—'}</p>
-            <p className="text-xs text-white/40 mt-0.5">{t('diet.kcalConsumed')}</p>
+          <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', borderRadius: isMobile ? 16 : 20, padding: isMobile ? '16px 12px' : 16, textAlign: 'center', gridColumn: isMobile ? 'span 2' : 'auto' }}>
+            <p style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#fb923c', margin: 0 }}>{totalCals > 0 ? totalCals : '—'}</p>
+            <p style={{ fontSize: 11, color: 'rgba(250,250,250,0.4)', marginTop: 4 }}>{t('diet.kcalConsumed')}</p>
           </div>
         </div>
       )}
@@ -283,29 +292,28 @@ export default function Diet() {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={addMeal} className="bg-[#141414] border border-white/10 rounded-2xl p-5 mb-6 space-y-3">
-          <h3 className="font-semibold text-white/70 text-sm">{t('diet.formTitle')}</h3>
+        <form onSubmit={addMeal} style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: isMobile ? 16 : 20, marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'rgba(250,250,250,0.7)', margin: 0 }}>{t('diet.formTitle')}</h3>
           <input value={food} onChange={e => setFood(e.target.value)}
             placeholder={t('diet.foodPlaceholder')}
             autoFocus required
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition" />
-          <div className="flex gap-3">
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 12, padding: '10px 12px', fontSize: 13.5, outline: 'none' }} />
+          <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
             <select value={mealType} onChange={e => setMealType(e.target.value)}
-              className="flex-1 bg-[#1c1c1c] border border-white/10 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition">
+              style={{ flex: 1, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 12, padding: '10px 12px', fontSize: 13.5, outline: 'none' }}>
               {mealTypes.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
             <input type="number" value={calories} onChange={e => setCalories(e.target.value)}
               placeholder={t('diet.kcalPlaceholder')}
-              className="w-36 bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2e]/50 transition" />
+              style={{ width: isMobile ? '100%' : 144, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 12, padding: '10px 12px', fontSize: 13.5, outline: 'none' }} />
           </div>
-          <div className="flex gap-2 justify-end">
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
             <button type="button" onClick={() => setShowForm(false)}
-              className="text-sm text-white/40 px-4 py-2 rounded-xl hover:bg-white/5 transition">
+              style={{ fontSize: 13.5, color: 'rgba(250,250,250,0.4)', padding: isMobile ? '10px' : '8px 16px', borderRadius: 12, border: 'none', background: 'none', cursor: 'pointer', flex: isMobile ? 1 : 'none' }}>
               {t('diet.cancel')}
             </button>
             <button type="submit" disabled={adding}
-              className="text-sm text-black font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2"
-              style={{ background: P }}>
+              style={{ fontSize: 13.5, background: P, color: '#0a0a0a', fontWeight: 600, padding: isMobile ? '10px' : '8px 16px', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: isMobile ? 1 : 'none' }}>
               {adding && <Loader2 size={14} className="animate-spin" />}
               {t('diet.add')}
             </button>
