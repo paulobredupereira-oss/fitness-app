@@ -75,10 +75,9 @@ export default function Calendar() {
     const rangeEnd   = `${viewYear}-${mm}-${String(last).padStart(2, '0')}`
 
     Promise.all([
-      // Tasks with due_date in this month (only pending)
+      // Tasks with due_date in this month
       supabase.from('tasks').select('*')
         .eq('user_id', user.id)
-        .eq('done', false)
         .not('due_date', 'is', null)
         .gte('due_date', rangeStart)
         .lte('due_date', rangeEnd)
@@ -112,7 +111,7 @@ export default function Calendar() {
   }
 
   tasks.forEach(t => {
-    if (!t.due_date || t.done) return // Skip completed tasks
+    if (!t.due_date) return
     const d = parseInt(t.due_date.split('-')[2], 10)
     addItem(d, { ...t, _type: 'task' })
   })
@@ -169,7 +168,7 @@ export default function Calendar() {
 
   /* ── Upcoming list (no selection) — sorted by due_date ──────── */
   const allDatedItems = [
-    ...tasks.filter(t => !t.done).map(t => ({ ...t, _type: 'task' })),
+    ...tasks.map(t => ({ ...t, _type: 'task' })),
     ...workoutsDue.map(w => ({ ...w, _type: 'workout' })),
   ].sort((a, b) => a.due_date > b.due_date ? 1 : -1)
 
@@ -442,9 +441,15 @@ export default function Calendar() {
                   </div>
 
                   {/* Icon */}
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>
-                    {isTask ? '✅' : sportOf(item).emoji}
-                  </span>
+                  {isTask ? (
+                    item.done
+                      ? <CheckCircle2 size={18} style={{ color: accent, fill: `${accent}22`, flexShrink: 0 }} />
+                      : <Circle size={18} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                  ) : (
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>
+                      {sportOf(item).emoji}
+                    </span>
+                  )}
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
