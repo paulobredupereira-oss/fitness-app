@@ -75,9 +75,10 @@ export default function Calendar() {
     const rangeEnd   = `${viewYear}-${mm}-${String(last).padStart(2, '0')}`
 
     Promise.all([
-      // Tasks with due_date in this month
+      // Tasks with due_date in this month (only pending)
       supabase.from('tasks').select('*')
         .eq('user_id', user.id)
+        .eq('done', false)
         .not('due_date', 'is', null)
         .gte('due_date', rangeStart)
         .lte('due_date', rangeEnd)
@@ -111,7 +112,7 @@ export default function Calendar() {
   }
 
   tasks.forEach(t => {
-    if (!t.due_date) return
+    if (!t.due_date || t.done) return // Skip completed tasks
     const d = parseInt(t.due_date.split('-')[2], 10)
     addItem(d, { ...t, _type: 'task' })
   })
@@ -168,7 +169,7 @@ export default function Calendar() {
 
   /* ── Upcoming list (no selection) — sorted by due_date ──────── */
   const allDatedItems = [
-    ...tasks.map(t => ({ ...t, _type: 'task' })),
+    ...tasks.filter(t => !t.done).map(t => ({ ...t, _type: 'task' })),
     ...workoutsDue.map(w => ({ ...w, _type: 'workout' })),
   ].sort((a, b) => a.due_date > b.due_date ? 1 : -1)
 
