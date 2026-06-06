@@ -146,9 +146,9 @@ function PhotoAlbum({ userId, today, t, primary, isMobile }) {
                 onClick={() => setPreviewUrl(photo.url)}
               />
               <button onClick={() => deletePhoto(photo)}
-                style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', opacity: 0, transition: 'all 0.2s' }}
+                style={{ position: 'absolute', top: 6, right: 6, width: isMobile ? 28 : 24, height: isMobile ? 28 : 24, background: 'rgba(0,0,0,0.7)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', opacity: isMobile ? 0.9 : 0, transition: 'all 0.2s' }}
                 className="group-hover:opacity-100 hover:bg-red-500">
-                <X size={12} />
+                <X size={isMobile ? 14 : 12} />
               </button>
             </div>
           ))}
