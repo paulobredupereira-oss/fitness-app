@@ -53,7 +53,7 @@ function MealCard({ meal, onToggle, onDelete, mealTypes, primary }) {
 }
 
 // ── Photo Album ───────────────────────────────────────────────────────────────
-function PhotoAlbum({ userId, today, t, primary }) {
+function PhotoAlbum({ userId, today, t, primary, isMobile }) {
   const [photos, setPhotos] = useState([])
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -345,7 +345,7 @@ export default function Diet() {
         </div>
       )}
 
-      {user && <PhotoAlbum userId={user.id} today={today} t={t} primary={primary} />}
+      {user && <PhotoAlbum userId={user.id} today={today} t={t} primary={primary} isMobile={isMobile} />}
     </Layout>
   )
 }
